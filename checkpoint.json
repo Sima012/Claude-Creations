@@ -1,0 +1,60 @@
+{
+  "project": "Retail Wars: România",
+  "checkpoint": "phase1-v1",
+  "date": "2026-05-24",
+  "file": "index.html",
+  "engine": "Phaser 3.70 CDN",
+  "groq_model": "llama-3.3-70b-versatile",
+
+  "status": {
+    "character_creation": "✅ GATA — Pas 1 (Nume + Gen + Aspect), Pas 2 (Magazin: Flanco/Atexl/MagE), Pas 3 (Intro typing effect)",
+    "world_map": "✅ GATA — Tilemap procedural 80x60 (1280x960px), 6 tipuri tile, drumuri, parcare, apă, 10 clădiri",
+    "player_movement": "✅ GATA — Phaser arcade physics, touch D-pad + keyboard, 4 direcții, animații walk procedurale",
+    "camera": "✅ GATA — Urmărește playerul, deadzone, bounds la world",
+    "buildings": "✅ GATA — 10 clădiri desenate procedural cu windows/uși, etichete, zone de intrare",
+    "npcs": "✅ GATA — 5 legendari (Vasile/Cornelia/Gigel/Coste/Elena) + 24 random, patrulare, exclamații",
+    "dialog_system": "✅ GATA — Typing effect, choices A/B/C, Groq API cu fallback",
+    "groq_api": "✅ GATA — POST la Groq cu timeout 4.5s, fallback per personalitate",
+    "save_system": "✅ GATA — localStorage, autosave 60s, continuă/joc nou",
+    "hud": "✅ GATA — Nume, nivel, bani, moral bar, ora",
+    "minimap": "✅ GATA — 66x50px colț dreapta sus, clădiri colorate, player dot pulsant",
+    "collision": "✅ GATA — Clădiri + apă = collidable, player nu trece prin ele",
+    "notifications": "✅ GATA — Toast notifications cu auto-dismiss 2.4s"
+  },
+
+  "phase2_todo": [
+    "Battle system turn-based (HP client, Argumentează/Demonstrează/Voucher/Sună Șeful/Fugi)",
+    "Shop interior scenes (Flanco/Atexl/MagE cu rafturi și NPC-uri interne)",
+    "Economy: bancă (dobândă, împrumuturi), afaceri de cumpărat (10 tipuri)",
+    "Client stealing mechanic (interceptare clienți la intrarea în magazin competitor)",
+    "Chirie vs casă proprie (costuri lunare)",
+    "Angajare la magazin + schimbarea jobului (cooldown 3 luni in-game)",
+    "Full battle scene cu Pokémon-style HP bars pentru clienți legendari",
+    "Informații reale retail: retururi 30/45 zile, garanție legală 2 ani, etc.",
+    "Shop interior cu NPC manager pentru angajare",
+    "Passive income: venit per minut din afacerile deținute"
+  ],
+
+  "tech_notes": {
+    "groq_key": "PUNE_CHEIA_GROQ_AICI — vezi mesajul din chat",
+    "known_issues": [
+      "Texturile NPC se generează o dată la spawn — nu animat (1 frame static)",
+      "Clădirile 'entrada' sunt approximate — nu pixel-perfect aliniate cu ușa",
+      "Groq latency poate fi 1-2s pe rețele slabe — există fallback hardcodat"
+    ],
+    "resume_from": "Adaugă BattleScene ca nouă clasă Phaser.Scene și leagă din talkToNPC() după dialog inițial",
+    "player_sprite_frames": "16x24px, 4 cols x 4 rows = 64x96 spritesheet. Row 0=walk_d, 1=walk_u, 2=walk_l, 3=walk_r",
+    "map_coords": "TILE=16px. Mall: x41-58,y10-45. Centru: x10-25,y5-25. Rezidential: x5-20,y35-55. Industrial: x55-75,y25-55"
+  },
+
+  "retail_info_todo": {
+    "note": "Utilizatorul vrea informații reale din T&C-urile magazinelor",
+    "flanco_real": {
+      "retur": "45 zile calendaristice pentru produse cumpărate fizic din magazin",
+      "garantie_legala": "2 ani conform legii UE",
+      "accent": "Client-centrism, calitate servicii",
+      "nota_implementare": "Adaugă în CHOICES_MAP și în prompt-ul Groq ca 'context retail real'"
+    },
+    "implementare_recomandata": "Creează obiect RETAIL_FACTS cu info per magazin, injectat în promptul Groq ca system context"
+  }
+}

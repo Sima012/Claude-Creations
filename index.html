@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Retail Wars: România</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action:none;}
+
+#wrapper{
+  width:100%;max-width:480px;height:100%;
+  display:flex;flex-direction:column;
+  margin:0 auto;overflow:hidden;position:relative;
+}
+
+/* ─── HUD ─────────────────────────────── */
+#hud{
+  height:44px;background:#1a1a2e;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 8px;z-index:100;flex-shrink:0;
+  border-bottom:2px solid #2a2a4a;
+}
+.hud-item{display:flex;flex-direction:column;align-items:center;gap:1px;}
+.hud-lbl{font-family:'Press Start 2P',monospace;font-size:4px;color:#555;letter-spacing:0.5px;}
+.hud-val{font-family:'Press Start 2P',monospace;font-size:8px;color:#FFD600;
+  text-shadow:0 0 8px rgba(255,214,0,0.4);}
+.hud-bar{width:48px;height:6px;background:#222;border:1px solid #444;overflow:hidden;}
+.hud-bar-fill{height:100%;transition:width 0.4s;}
+#moral-fill{background:linear-gradient(90deg,#0055bb,#33aaff);}
+
+/* ─── PHASER CANVAS CONTAINER ─────────── */
+#phaser-container{
+  flex:1;width:100%;overflow:hidden;
+  touch-action:none;position:relative;
+  min-height:0;
+}
+#phaser-container canvas{
+  display:block;image-rendering:pixelated;
+  width:100%!important;height:100%!important;
+}
+
+/* ─── CONTROLS ─────────────────────────── */
+#controls{
+  height:160px;background:#0d0d0d;
+  display:flex;align-items:flex-end;justify-content:space-between;
+  padding:10px 16px 18px;flex-shrink:0;
+  border-top:2px solid #1a1a1a;
+}
+.dpad{
+  display:grid;
+  grid-template-columns:repeat(3,46px);
+  grid-template-rows:repeat(3,46px);
+  gap:2px;
+}
+.dp{
+  background:rgba(255,255,255,0.07);
+  border:2px solid rgba(255,255,255,0.12);
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;cursor:pointer;user-select:none;
+  transition:background 0.08s,border-color 0.08s;
+}
+.dp:active,.dp.on{background:rgba(227,6,19,0.35);border-color:#E30613;}
+.dp-empty{opacity:0;pointer-events:none;}
+.action-btns{display:flex;gap:10px;align-items:center;padding-bottom:8px;}
+.abtn{
+  width:58px;height:58px;border-radius:50%;
+  border:3px solid;
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;cursor:pointer;user-select:none;
+  font-family:'Press Start 2P',monospace;font-size:7px;
+  transition:transform 0.08s;
+}
+.abtn:active,.abtn.on{transform:scale(0.87);}
+.btn-a{background:rgba(0,190,75,0.15);border-color:#00be4b;color:#00be4b;}
+.btn-b{background:rgba(227,6,19,0.15);border-color:#E30613;color:#E30613;}
+.btn-select{
+  width:44px;height:22px;border-radius:11px;
+  border:2px solid #333;background:rgba(255,255,255,0.05);
+  font-family:'Press Start 2P',monospace;font-size:4px;color:#555;
+  cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:center;
+}
+
+/* ─── OVERLAYS ─────────────────────────── */
+.ov{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  z-index:500;padding:20px;
+}
+.hidden{display:none!important;}
+
+/* ─── MENU ─────────────────────────────── */
+#menu-screen{
+  background:radial-gradient(ellipse at 50% 30%,#1a0a3e 0%,#0a0018 70%);
+}
+.logo-main{
+  font-family:'Press Start 2P',monospace;
+  font-size:10px;color:#FFD600;
+  text-shadow:3px 3px 0 #664400,0 0 40px rgba(255,214,0,0.6);
+  text-align:center;line-height:2;margin-bottom:6px;
+  animation:logoPulse 2s ease-in-out infinite alternate;
+}
+@keyframes logoPulse{
+  from{text-shadow:3px 3px 0 #664400,0 0 15px rgba(255,214,0,0.3);}
+  to{text-shadow:3px 3px 0 #664400,0 0 55px rgba(255,214,0,1);}
+}
+.logo-sub{
+  font-family:'Press Start 2P',monospace;font-size:5px;
+  color:#ff8888;text-align:center;line-height:2;margin-bottom:28px;
+}
+.pixel-hero{font-size:56px;margin-bottom:20px;animation:heroFloat 3s ease-in-out infinite;}
+@keyframes heroFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.mbtn{
+  background:#E30613;color:white;
+  border:3px solid #FFD600;padding:13px 26px;
+  font-family:'Press Start 2P',monospace;font-size:9px;
+  cursor:pointer;margin:5px;
+  box-shadow:4px 4px 0 #7a0008,0 0 20px rgba(227,6,19,0.3);
+  transition:transform 0.1s,box-shadow 0.1s;
+}
+.mbtn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #7a0008;}
+.mbtn-sec{
+  background:transparent;color:#FFD600;
+  border:2px solid #FFD600;padding:9px 18px;
+  font-family:'Press Start 2P',monospace;font-size:7px;
+  cursor:pointer;margin:4px;
+}
+.version-tag{font-family:'Press Start 2P',monospace;font-size:4px;color:#2a2a4a;margin-top:18px;}
+
+/* ─── CHAR CREATE ───────────────────────── */
+#char-screen{
+  background:#080812;justify-content:flex-start;
+  padding-top:16px;overflow-y:auto;gap:0;
+}
+.step-hdr{
+  font-family:'Press Start 2P',monospace;font-size:7px;
+  color:#FFD600;margin-bottom:12px;text-align:center;
+}
+.step-sub{
+  font-family:'Press Start 2P',monospace;font-size:4px;
+  color:#666;margin-bottom:18px;text-align:center;line-height:2;
+}
+#name-inp{
+  background:#111;border:3px solid #FFD600;
+  color:#FFD600;font-family:'Press Start 2P',monospace;
+  font-size:13px;padding:10px;width:100%;max-width:280px;
+  text-align:center;margin-bottom:14px;outline:none;
+}
+.gender-row{display:flex;gap:14px;margin-bottom:20px;}
+.gcard{
+  background:#1a1a2e;border:3px solid #333;
+  padding:14px 20px;cursor:pointer;text-align:center;
+  transition:border-color 0.15s,background 0.15s;border-radius:4px;
+  font-family:'Press Start 2P',monospace;
+}
+.gcard.sel{border-color:#FFD600;background:#1a1a40;}
+.gcard .gico{font-size:32px;display:block;margin-bottom:6px;}
+.gcard .glbl{font-size:5px;color:#aaa;}
+.app-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:10px;width:100%;max-width:300px;margin-bottom:14px;
+}
+.acard{
+  background:#111;border:3px solid #333;
+  padding:10px;cursor:pointer;text-align:center;
+  transition:border-color 0.15s;border-radius:4px;
+}
+.acard.sel{border-color:#FFD600;background:#0a0a22;}
+.acard canvas{display:block;margin:0 auto 6px;image-rendering:pixelated;}
+.acard .albl{font-family:'Press Start 2P',monospace;font-size:4px;color:#888;}
+.store-list{display:flex;flex-direction:column;gap:8px;width:100%;max-width:340px;}
+.scard{
+  border:3px solid #333;padding:12px;cursor:pointer;
+  display:flex;align-items:center;gap:10px;
+  transition:border-color 0.15s,background 0.15s;
+  background:#0d0d1a;
+}
+.scard.sel{border-color:#FFD600;background:#111128;}
+.scard-ico{font-size:26px;flex-shrink:0;}
+.scard-info .sname{font-family:'Press Start 2P',monospace;font-size:7px;margin-bottom:5px;}
+.scard-info .sdesc{font-family:'VT323',monospace;font-size:15px;color:#888;line-height:1.4;}
+.cfm-btn{
+  background:#007733;color:white;border:3px solid #00cc55;
+  padding:12px 26px;font-family:'Press Start 2P',monospace;font-size:8px;
+  cursor:pointer;margin-top:14px;box-shadow:3px 3px 0 #003311;
+  transition:transform 0.1s;
+}
+.cfm-btn:active{transform:translate(2px,2px);}
+.back-btn{
+  background:transparent;color:#555;border:2px solid #333;
+  padding:9px 18px;font-family:'Press Start 2P',monospace;font-size:6px;
+  cursor:pointer;margin-top:14px;
+}
+.intro-text{
+  font-family:'VT323',monospace;font-size:18px;
+  color:#eee;line-height:1.8;text-align:center;
+  max-width:320px;min-height:130px;margin:10px 0;
+}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+.cursor::after{content:'▌';animation:blink 0.7s step-end infinite;}
+
+/* ─── DIALOG BOX ─────────────────────────── */
+#dialog-box{
+  position:fixed;
+  left:50%;transform:translateX(-50%);
+  width:calc(100% - 16px);max-width:464px;
+  bottom:170px;
+  background:rgba(0,0,0,0.95);
+  border:3px solid #FFD600;
+  padding:10px 12px;z-index:600;
+}
+#dlg-speaker{font-family:'Press Start 2P',monospace;font-size:6px;color:#FFD600;margin-bottom:6px;}
+#dlg-text{font-family:'VT323',monospace;font-size:19px;color:white;line-height:1.4;min-height:42px;}
+#dlg-choices{margin-top:8px;display:flex;flex-direction:column;gap:4px;}
+.dchoice{
+  background:#111;border:2px solid #333;
+  padding:7px 10px;
+  font-family:'VT323',monospace;font-size:17px;
+  color:#ccc;cursor:pointer;text-align:left;
+  transition:border-color 0.1s,color 0.1s;
+}
+.dchoice:active,.dchoice:hover{border-color:#FFD600;color:#FFD600;}
+#dlg-continue{
+  font-family:'Press Start 2P',monospace;font-size:5px;
+  color:#555;text-align:right;margin-top:6px;
+  animation:blink 1s step-end infinite;
+}
+
+/* ─── NOTIFICATION ────────────────────── */
+#notif{
+  position:fixed;top:52px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,0.92);border:2px solid #E30613;
+  padding:6px 14px;
+  font-family:'Press Start 2P',monospace;font-size:6px;
+  color:#FFD600;z-index:700;pointer-events:none;
+  opacity:0;transition:opacity 0.3s;white-space:nowrap;
+  border-radius:2px;
+}
+
+/* ─── LOADING ─────────────────────────── */
+#loading-screen{
+  background:#080812;
+  font-family:'Press Start 2P',monospace;
+  font-size:8px;color:#FFD600;
+  flex-direction:column;gap:16px;
+}
+.load-bar-wrap{width:200px;height:10px;background:#222;border:2px solid #444;}
+.load-bar-fill{height:100%;background:#E30613;width:0%;transition:width 0.3s;}
+
+/* ─── MINIMAP ─────────────────────────── */
+#minimap{
+  position:fixed;right:8px;top:52px;
+  width:66px;height:50px;
+  background:rgba(0,0,0,0.8);border:2px solid #333;
+  z-index:200;overflow:hidden;cursor:pointer;
+}
+#minimap canvas{display:block;image-rendering:pixelated;}
+</style>
+</head>
+<body>
+
+<div id="wrapper">
+  <div id="hud" class="hidden">
+    <div class="hud-item">
+      <div class="hud-lbl">PLAYER</div>
+      <div class="hud-val" id="hud-name">-</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-lbl">NIV</div>
+      <div class="hud-val" id="hud-niv">1</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-lbl">💰 RON</div>
+      <div class="hud-val" id="hud-bani">0</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-lbl">❤️ MORAL</div>
+      <div class="hud-bar"><div class="hud-bar-fill" id="moral-fill" style="width:100%"></div></div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-lbl">🕐 ORA</div>
+      <div class="hud-val" id="hud-time">08:00</div>
+    </div>
+  </div>
+
+  <div id="phaser-container"></div>
+
+  <div id="controls" class="hidden">
+    <div class="dpad">
+      <div class="dp-empty"></div>
+      <div class="dp" id="d-up"   ontouchstart="dp('up',1)"   ontouchend="dp('up',0)"   onmousedown="dp('up',1)"   onmouseup="dp('up',0)">▲</div>
+      <div class="dp-empty"></div>
+      <div class="dp" id="d-left" ontouchstart="dp('left',1)" ontouchend="dp('left',0)" onmousedown="dp('left',1)" onmouseup="dp('left',0)">◄</div>
+      <div class="dp dp-empty" style="opacity:0.08;pointer-events:none;border-radius:50%">●</div>
+      <div class="dp" id="d-right"ontouchstart="dp('right',1)"ontouchend="dp('right',0)"onmousedown="dp('right',1)"onmouseup="dp('right',0)">►</div>
+      <div class="dp-empty"></div>
+      <div class="dp" id="d-down" ontouchstart="dp('down',1)" ontouchend="dp('down',0)" onmousedown="dp('down',1)" onmouseup="dp('down',0)">▼</div>
+      <div class="dp-empty"></div>
+    </div>
+    <div class="action-btns">
+      <div class="abtn btn-b" id="btn-b" ontouchstart="ab('b',1)" ontouchend="ab('b',0)" onmousedown="ab('b',1)" onmouseup="ab('b',0)">B<br>ÎNAPOI</div>
+      <div class="abtn btn-a" id="btn-a" ontouchstart="ab('a',1)" ontouchend="ab('a',0)" onmousedown="ab('a',1)" onmouseup="ab('a',0)">A<br>ACȚIUNE</div>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAYS -->
+<div id="menu-screen" class="ov">
+  <div class="logo-main">⚡ RETAIL WARS ⚡<br>ROMÂNIA</div>
+  <div class="logo-sub">Devino magnatul retailului românesc.<br>Vinde. Cumpără. Cucerește.</div>
+  <div class="pixel-hero" id="menu-hero">🧑‍💼</div>
+  <button class="mbtn" id="btn-continue" onclick="doContinue()">▶ CONTINUĂ</button>
+  <button class="mbtn" id="btn-newgame" onclick="doNewGame()">✦ JOC NOU</button>
+  <div class="version-tag">v0.1-Phase1 · Phase2: Battle System</div>
+</div>
+
+<div id="char-screen" class="ov hidden"></div>
+
+<div id="loading-screen" class="ov hidden">
+  <div>Se generează lumea...</div>
+  <div class="load-bar-wrap"><div class="load-bar-fill" id="load-bar"></div></div>
+  <div id="load-label" style="font-size:5px;color:#555">Inițializare...</div>
+</div>
+
+<div id="dialog-box" class="hidden">
+  <div id="dlg-speaker">CLIENT:</div>
+  <div id="dlg-text"></div>
+  <div id="dlg-choices"></div>
+  <div id="dlg-continue" class="hidden">▼ apasă A</div>
+</div>
+
+<div id="minimap" class="hidden"><canvas id="minimap-canvas" width="66" height="50"></canvas></div>
+<div id="notif"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  RETAIL WARS: ROMÂNIA  —  Phase 1
+//  Engine: Phaser 3.70  |  AI: Groq llama-3.3-70b
+//  Autor: Claude pentru baiatul-cu-it.ro
+// ═══════════════════════════════════════════════════════════════
+
+// 👇 PUNE CHEIA GROQ AICI (gsk_...)
+const GROQ_KEY = "PUNE_CHEIA_GROQ_AICI";
+const SAVE_KEY = "rw_v1_save";
+const TILE = 16;
+const MAP_W = 80, MAP_H = 60;
+const WORLD_W = MAP_W * TILE; // 1280
+const WORLD_H = MAP_H * TILE; // 960
+
+// ─── Save ───────────────────────────────────────────────────────
+const Save = {
+  load(){ try{ return JSON.parse(localStorage.getItem(SAVE_KEY)); }catch{return null;} },
+  write(d){ localStorage.setItem(SAVE_KEY, JSON.stringify(d)); },
+  clear(){ localStorage.removeItem(SAVE_KEY); }
+};
+
+// ─── Global State ───────────────────────────────────────────────
+const G = {
+  name:'', gender:'M', appearance:0, magazin:'flanco',
+  nivel:1, xp:0, bani:1500, moral:100, persuasiune:3,
+  npcConvinsi:{}, achievements:[], afaceri:[],
+  gameHour:8, gameMin:0,
+  // runtime
+  scene:null, dialogActive:false,
+  keys:{up:false,down:false,left:false,right:false,a:false,b:false},
+  aWasDown:false
+};
+
+function gs(){ return G; }
+function saveGame(){
+  Save.write({
+    name:G.name,gender:G.gender,appearance:G.appearance,magazin:G.magazin,
+    nivel:G.nivel,xp:G.xp,bani:G.bani,moral:G.moral,persuasiune:G.persuasiune,
+    npcConvinsi:G.npcConvinsi,achievements:G.achievements,afaceri:G.afaceri,
+    gameHour:G.gameHour,gameMin:G.gameMin
+  });
+}
+function loadIntoG(d){ Object.assign(G,d); updateHUD(); }
+
+// ─── HUD ─────────────────────────────────────────────────────────
+function updateHUD(){
+  $('hud-name').textContent = G.name||'?';
+  $('hud-niv').textContent = G.nivel;
+  $('hud-bani').textContent = numFmt(G.bani);
+  $('moral-fill').style.width = G.moral+'%';
+  $('hud-time').textContent = pad2(G.gameHour)+':'+pad2(G.gameMin);
+}
+function addBani(n){ G.bani+=n; updateHUD(); notify('+'+numFmt(n)+' RON 💰'); saveGame(); }
+function addXP(n){
+  G.xp+=n;
+  const need=G.nivel*100;
+  if(G.xp>=need){ G.xp-=need; G.nivel++; G.persuasiune=Math.min(10,3+Math.floor(G.nivel*0.3)); updateHUD(); notify('🎉 NIVEL '+G.nivel+'! Persuasiune: '+G.persuasiune); }
+  else updateHUD();
+}
+function addMoral(n){ G.moral=clamp(G.moral+n,0,100); updateHUD(); }
+
+// ─── Utils ───────────────────────────────────────────────────────
+function $(id){ return document.getElementById(id); }
+function pad2(n){ return String(n).padStart(2,'0'); }
+function numFmt(n){ return n.toLocaleString('ro'); }
+function rnd(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function clamp(v,mn,mx){ return Math.max(mn,Math.min(mx,v)); }
+function dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
+function hex2n(h){ return parseInt(h.replace('#',''),16); }
+
+let _nt;
+function notify(txt){
+  const n=$('notif'); n.textContent=txt; n.style.opacity='1';
+  clearTimeout(_nt); _nt=setTimeout(()=>{ n.style.opacity='0'; },2400);
+}
+
+// ─── Touch / keyboard ────────────────────────────────────────────
+function dp(dir,on){
+  G.keys[dir]=!!on;
+  $('d-'+dir)?.classList.toggle('on',!!on);
+  if(G.scene?.setPlayerVel) G.scene.setPlayerVel();
+}
+function ab(btn,on){
+  G.keys[btn]=!!on;
+  $('btn-'+btn)?.classList.toggle('on',!!on);
+  if(on&&btn==='a'){ if(G.scene?.onA) G.scene.onA(); }
+}
+document.addEventListener('keydown',e=>{
+  const m={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',KeyZ:'a',KeyX:'b',Space:'a'};
+  if(m[e.code]){ e.preventDefault(); dp(m[e.code],1); if(m[e.code]==='a'&&G.scene?.onA) G.scene.onA(); }
+});
+document.addEventListener('keyup',e=>{
+  const m={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',KeyZ:'a',KeyX:'b',Space:'a'};
+  if(m[e.code]) dp(m[e.code],0);
+});
+document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+
+// ─── Romanian Data ───────────────────────────────────────────────
+const NAMES = ['Ion','Maria','Gheorghe','Elena','Vasile','Ana','Mihai','Ioana',
+  'Constantin','Cristina','Alexandru','Daniela','Florin','Andreea','Bogdan','Raluca',
+  'Cătălin','Simona','Marius','Alina','Sorin','Laura','Vlad','Monica','Radu','Claudia',
+  'Adrian','Roxana','Dan','Iulia','Paul','Carmen','Tudor','Diana','Lucian','Gabriela'];
+
+const PERSONAS = ['agresiv','pasiv','analitic','emotional','grabit','nehotarat'];
+
+const OBIECTII = {
+  pret:   ['La {comp} l-am văzut cu {X} lei mai ieftin!','Nu pot da atât. Merită investiția?','Soția nu mă lasă să dau mai mult de {X} lei.','Poate mai lăsați ceva din preț?'],
+  calitate:['Am citit pe forum că are probleme după 6 luni.','Un vecin a cumpărat și s-a stricat repede.','Pare fragil. Nu știu dacă rezistă.','Brand-ul ăsta nu mi se pare serios.'],
+  comparatie:['La {comp} e cu garanție extinsă inclusă.','De ce e mai scump la voi decât online?','Concurența voastră are ofertă mai bună acum.','Onlineul e cu 300 lei mai ieftin, ce faceți?'],
+  incredere:['Dar dacă se strică? Service-ul e ok?','Am auzit că returnurile sunt grele la voi.','Nu știu dacă garanția e reală sau nu.','Prietenul meu a avut probleme cu voi.'],
+  urgenta:['Trebuie să îl am până la 5 seara.','Nu am timp de explicații lungi.','Dacă nu e în stoc, plec la altul.','Soția mă grăbește, faceți repede.']
+};
+
+function fillObiectie(template){
+  const comp = pick(['Atexl','MagE','eMag','Flanco','online']);
+  const X = pick([50,100,150,200,300,400]);
+  return template.replace('{comp}',comp).replace('{X}',X);
+}
+
+const LEGENDARI = {
+  vasile:{
+    id:'vasile',name:'Vasile cel Etern',emoji:'👴',rig:10,hp:200,hpMax:200,
+    persona:'agresiv',obiectieType:'pret',
+    replica:'La Flanco era mai ieftin în 2019. Atunci era calitate!',
+    slabiciune:['2019','vechi','depășit','nou','tehnologie','modern'],
+    reward:{bani:500,xp:200},legendary:true,
+    desc:'Nostalgicul Eternal — îi place ce-a fost'
+  },
+  cornelia:{
+    id:'cornelia',name:'Dna. Cornelia',emoji:'👩',rig:9,hp:180,hpMax:180,
+    persona:'emotional',obiectieType:'incredere',
+    replica:'Fiul meu, care se pricepe la toate, zice că produsul ăsta e prost.',
+    slabiciune:['fiul','dreptate','dar','știe','suplimentar','inform'],
+    reward:{bani:400,xp:180},legendary:true,
+    desc:'Mama cu Fiul Expert — validarea e cheia'
+  },
+  gigel:{
+    id:'gigel',name:'Gigel Expertul',emoji:'🤓',rig:8,hp:160,hpMax:160,
+    persona:'analitic',obiectieType:'calitate',
+    replica:'Am citit pe forum că după 2 ani bateria se degradează cu 40%. Am dovezi.',
+    slabiciune:['expert','forum','dreptate','interesant','știați','date'],
+    reward:{bani:350,xp:160},legendary:true,
+    desc:'Omul cu Datele — fă-l partener, nu adversar'
+  },
+  coste:{
+    id:'coste',name:'Coste Managerul',emoji:'💼',rig:10,hp:220,hpMax:220,
+    persona:'agresiv',obiectieType:'pret',
+    replica:'Fac factură pe firmă. Vreau 40% discount sau sun la manager!',
+    slabiciune:['business','firmă','B2B','contract','parteneriat','comercial'],
+    reward:{bani:800,xp:250},legendary:true,
+    desc:'Corporatistul Agresiv — propune cont business'
+  },
+  elena:{
+    id:'elena',name:'Elena Returnatoarea',emoji:'🛍️',rig:9,hp:150,hpMax:150,
+    persona:'emotional',obiectieType:'incredere',
+    replica:'L-am cumpărat acum 15 luni și s-a stricat. Vreau schimb sau bani înapoi.',
+    slabiciune:['înțeleg','situație','rezolvăm','service','soluție','ajutăm'],
+    reward:{bani:200,xp:140},legendary:true,
+    desc:'Doamna cu Reclamația — empatia bate regulile'
+  }
+};
+
+function makeClient(){
+  const rig=rnd(1,8);
+  const obiectieType=pick(Object.keys(OBIECTII));
+  const templates=OBIECTII[obiectieType];
+  return {
+    id:'c_'+Date.now()+'_'+rnd(0,9999),
+    name:pick(NAMES),
+    emoji:pick(['😤','😊','🤔','🙎','😐','🤨','😑','🧐']),
+    rig,hp:50+rig*15,hpMax:50+rig*15,
+    persona:pick(PERSONAS),obiectieType,
+    replica:fillObiectie(pick(templates)),
+    reward:{bani:80+rig*40+rnd(0,80),xp:10+rig*7},
+    legendary:false
+  };
+}
+
+// ─── Groq API ────────────────────────────────────────────────────
+const FALLBACKS = {
+  agresiv:  {replica:'Asta nu mă convinge deloc!',     goodChoice:false, effect:'none'},
+  pasiv:    {replica:'Hmm... poate aveți dreptate.',   goodChoice:true,  effect:'interesat'},
+  analitic: {replica:'Trebuie să verific specificațiile.',goodChoice:false,effect:'none'},
+  emotional:{replica:'Sună bine, dar nu știu...',      goodChoice:true,  effect:'interesat'},
+  grabit:   {replica:'Ok dar faceți repede.',          goodChoice:false, effect:'none'},
+  nehotarat:{replica:'Poate... mai mă gândesc.',       goodChoice:false, effect:'none'}
+};
+
+async function callGroq(client, playerChoice){
+  try {
+    const resp = await Promise.race([
+      fetch('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
+        body:JSON.stringify({
+          model:'llama-3.3-70b-versatile',
+          max_tokens:100,temperature:0.8,
+          messages:[
+            {role:'system',content:'Ești un engine RPG de negociere retail românesc. Răspunde STRICT cu JSON valid, fără markdown:\n{"replica":"max 12 cuvinte română","goodChoice":true|false,"effect":"none|convins|interesat|furios"}'},
+            {role:'user',content:`Client: ${client.name} (${client.persona}, rigiditate ${client.rig}/10)\nObiecție client: "${client.replica}"\nPlayerul ${G.name} a răspuns: "${playerChoice}"\nPersuasiunea playerului: ${G.persuasiune}/10, nivel ${G.nivel}, magazin ${G.magazin}\nEvaluează reacția clientului.`}
+          ]
+        })
+      }),
+      new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),4500))
+    ]);
+    const data=await resp.json();
+    const txt=data.choices?.[0]?.message?.content||'';
+    const m=txt.match(/\{[\s\S]*?\}/);
+    if(m) return JSON.parse(m[0]);
+    throw new Error('no json');
+  } catch(e){
+    console.warn('[Groq fallback]',e.message);
+    return FALLBACKS[client.persona]||FALLBACKS.pasiv;
+  }
+}
+
+// ─── Choices per obiectie ─────────────────────────────────────────
+const CHOICES_MAP = {
+  pret:[
+    'Calitatea justifică prețul pe termen lung.',
+    'Putem vedea variante în bugetul dvs.',
+    'Garanția extinsă e inclusă în preț.'
+  ],
+  calitate:[
+    'Produsul are certificare europeană CE.',
+    'Pot arăta recenziile verificate din platformă.',
+    'Mulți clienți revin după prima achiziție.'
+  ],
+  comparatie:[
+    'La noi aveți suport post-vânzare inclus.',
+    'Prețul online nu include instalarea și garanția.',
+    'Putem oferi aceleași beneficii plus livrare gratuită.'
+  ],
+  incredere:[
+    'Service-ul are timp de răspuns garantat 24h.',
+    'Returnul e gratuit în primele 30 de zile.',
+    'Pot arăta contractul de garanție acum.'
+  ],
+  urgenta:[
+    'E în stoc, îl putem pregăti în 10 minute.',
+    'Facem livrare prioritară dacă preferați.',
+    'Acum e promoție, prețul crește mâine.'
+  ]
+};
+function getChoices(client){
+  const arr=CHOICES_MAP[client.obiectieType]||CHOICES_MAP.pret;
+  return arr.map(t=>({text:t}));
+}
+
+// ─── Appearances ─────────────────────────────────────────────────
+const APPEARANCES = [
+  {label:'Andrei', hair:'#3d2200', shirt:'#E30613', skinTone:'#FDBCB4', gender:'M'},
+  {label:'Mihai',  hair:'#cc9900', shirt:'#0044cc', skinTone:'#FDBCB4', gender:'M'},
+  {label:'Ana',    hair:'#1a1a1a', shirt:'#009944', skinTone:'#F5CBA7', gender:'F'},
+  {label:'Maria',  hair:'#8B0000', shirt:'#cc6600', skinTone:'#F5CBA7', gender:'F'},
+];
+
+// ─── Menu ────────────────────────────────────────────────────────
+function initMenu(){
+  const save=Save.load();
+  $('btn-continue').style.display=save?'':'none';
+  $('btn-newgame').textContent=save?'✦ JOC NOU':'▶ ÎNCEPE';
+}
+function doContinue(){
+  const save=Save.load();
+  if(!save){ doNewGame(); return; }
+  loadIntoG(save);
+  startWorld();
+}
+function doNewGame(){
+  Save.clear();
+  $('menu-screen').classList.add('hidden');
+  showCharCreate();
+}
+
+// ─── Character Creation ──────────────────────────────────────────
+let CD={name:'',gender:'M',appearance:0,magazin:'flanco'};
+let charStep=1;
+
+function showCharCreate(){
+  charStep=1; CD={name:'',gender:'M',appearance:0,magazin:'flanco'};
+  renderStep();
+  $('char-screen').classList.remove('hidden');
+}
+
+function renderStep(){
+  const cc=$('char-screen'); cc.innerHTML='';
+  if(charStep===1) renderStep1(cc);
+  else if(charStep===2) renderStep2(cc);
+  else if(charStep===3) renderStep3(cc);
+}
+
+function renderStep1(cc){
+  const mApps=APPEARANCES.filter(a=>a.gender==='M');
+  const fApps=APPEARANCES.filter(a=>a.gender==='F');
+  const curApps=CD.gender==='M'?mApps:fApps;
+
+  cc.innerHTML=`
+    <div class="step-hdr">PASUL 1/3 — CINE EȘTI?</div>
+    <div class="step-sub">Cum te cheamă, viitor magnat al retailului?</div>
+    <input id="name-inp" type="text" maxlength="12" placeholder="Numele tău..."
+      value="${CD.name}" autocomplete="off" autocorrect="off" spellcheck="false">
+    <div class="step-sub" style="margin-top:10px">Gen:</div>
+    <div class="gender-row">
+      <div class="gcard${CD.gender==='M'?' sel':''}" onclick="CD.gender='M';CD.appearance=0;renderStep()">
+        <span class="gico">👨</span><div class="glbl">BĂIAT</div>
+      </div>
+      <div class="gcard${CD.gender==='F'?' sel':''}" onclick="CD.gender='F';CD.appearance=2;renderStep()">
+        <span class="gico">👩</span><div class="glbl">FATĂ</div>
+      </div>
+    </div>
+    <div class="step-sub">Aspect:</div>
+    <div class="app-grid">
+      ${curApps.map((a,i)=>{
+        const idx=CD.gender==='M'?i:i+2;
+        return `<div class="acard${CD.appearance===idx?' sel':''}" onclick="CD.appearance=${idx};renderStep()">
+          <canvas width="32" height="48" id="aprev${i}" style="width:32px;height:48px"></canvas>
+          <div class="albl">${a.label}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <button class="cfm-btn" onclick="s1Next()">CONTINUĂ →</button>
+  `;
+  // Draw previews
+  curApps.forEach((a,i)=>{
+    const c=document.getElementById('aprev'+i);
+    if(c) drawPreview(c.getContext('2d'),a);
+  });
+}
+
+function drawPreview(ctx,app){
+  ctx.clearRect(0,0,32,48);
+  const skin=app.skinTone||'#FDBCB4';
+  const hair=app.hair; const shirt=app.shirt;
+  // Legs
+  ctx.fillStyle='#1a1a4a'; ctx.fillRect(8,32,6,12); ctx.fillRect(18,32,6,12);
+  ctx.fillStyle='#111';    ctx.fillRect(8,43,6,3);  ctx.fillRect(18,43,6,3);
+  // Body
+  ctx.fillStyle=shirt; ctx.fillRect(8,18,16,15);
+  // Badge
+  ctx.fillStyle='#FFD600'; ctx.fillRect(9,20,7,3);
+  // Head
+  ctx.fillStyle=skin; ctx.fillRect(10,4,12,14);
+  // Hair
+  ctx.fillStyle=hair; ctx.fillRect(10,4,12,4);
+  if(app.gender==='F'){ ctx.fillRect(10,4,3,14); ctx.fillRect(19,4,3,14); }
+  // Eyes
+  ctx.fillStyle='#222'; ctx.fillRect(12,11,3,3); ctx.fillRect(18,11,3,3);
+  // Arms
+  ctx.fillStyle=shirt; ctx.fillRect(5,18,3,10); ctx.fillRect(24,18,3,10);
+  // Hands
+  ctx.fillStyle=skin; ctx.fillRect(5,28,3,3); ctx.fillRect(24,28,3,3);
+}
+
+function s1Next(){
+  const v=$('name-inp')?.value?.trim()||'';
+  if(v.length<2){ notify('⚠️ Introdu un nume (min 2 caractere)!'); return; }
+  CD.name=v; charStep=2; renderStep();
+}
+
+function renderStep2(cc){
+  cc.innerHTML=`
+    <div class="step-hdr">PASUL 2/3 — PRIMUL JOB</div>
+    <div class="step-sub">La ce companie vrei să te angajezi?</div>
+    <div class="store-list">
+      <div class="scard${CD.magazin==='flanco'?' sel':''}" onclick="CD.magazin='flanco';renderStep()" style="border-color:#E30613">
+        <div class="scard-ico">🔴</div>
+        <div class="scard-info">
+          <div class="sname" style="color:#E30613">FLANCO</div>
+          <div class="sdesc">⭐☆☆  Salariu: 3.000 RON/lună<br>Clienți medii · Recomandat nivel 1+</div>
+        </div>
+      </div>
+      <div class="scard${CD.magazin==='atexl'?' sel':''}" onclick="CD.magazin='atexl';renderStep()" style="border-color:#0044cc">
+        <div class="scard-ico">🔵</div>
+        <div class="scard-info">
+          <div class="sname" style="color:#0044cc">ATEXL</div>
+          <div class="sdesc">⭐⭐☆  Salariu: 3.500 RON/lună<br>Clienți dificili · Recomandat nivel 5+</div>
+        </div>
+      </div>
+      <div class="scard${CD.magazin==='mage'?' sel':''}" onclick="CD.magazin='mage';renderStep()" style="border-color:#ff6600">
+        <div class="scard-ico">🟠</div>
+        <div class="scard-info">
+          <div class="sname" style="color:#ff6600">MagE</div>
+          <div class="sdesc">⭐⭐⭐  Salariu: 4.500 RON/lună<br>Clienți imposibili · Nivel 10+ recomandat</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="back-btn" onclick="charStep=1;renderStep()">← ÎNAPOI</button>
+      <button class="cfm-btn" onclick="charStep=3;renderStep()">CONTINUĂ →</button>
+    </div>
+  `;
+}
+
+function renderStep3(cc){
+  const storeName={flanco:'Flanco',atexl:'Atexl',mage:'MagE'}[CD.magazin];
+  cc.innerHTML=`
+    <div class="step-hdr">BINE AI VENIT!</div>
+    <div style="font-size:54px;margin:14px 0;text-align:center">${CD.gender==='M'?'👨‍💼':'👩‍💼'}</div>
+    <div id="intro-txt" class="intro-text"></div>
+    <button class="cfm-btn hidden" id="btn-begin" onclick="beginGame()">ÎNCEPE AVENTURA →</button>
+    <button class="back-btn" onclick="charStep=2;renderStep()">← ÎNAPOI</button>
+  `;
+  // Typing intro
+  const lines=[
+    `Bună ziua, ${CD.name}!`,
+    `Prima ta zi în retailul românesc.`,
+    `Angajat la ${storeName}.`,
+    `Scopul: devino magnat.`,
+    `Vinde. Cumpără. Cucerește.`
+  ];
+  let li=0,ci=0,full='';
+  const el=$('intro-txt');
+  const t=setInterval(()=>{
+    if(li>=lines.length){ clearInterval(t); $('btn-begin').classList.remove('hidden'); return; }
+    const line=lines[li];
+    if(ci<line.length){ full+=line[ci]; el.innerHTML=full.replace(/\n/g,'<br>')+'<span class="cursor"></span>'; ci++; }
+    else{ full+='\n'; li++; ci=0; }
+  },42);
+}
+
+function beginGame(){
+  G.name=CD.name; G.gender=CD.gender; G.appearance=CD.appearance; G.magazin=CD.magazin;
+  G.nivel=1; G.xp=0; G.moral=100; G.persuasiune=3;
+  G.bani={flanco:1500,atexl:2000,mage:3000}[CD.magazin];
+  G.npcConvinsi={}; G.achievements=[]; G.afaceri=[];
+  G.gameHour=8; G.gameMin=0;
+  saveGame();
+  $('char-screen').classList.add('hidden');
+  startWorld();
+}
+
+// ─── World startup ────────────────────────────────────────────────
+function startWorld(){
+  $('menu-screen').classList.add('hidden');
+  $('char-screen').classList.add('hidden');
+  $('loading-screen').classList.remove('hidden');
+  $('hud').classList.remove('hidden');
+  $('controls').classList.remove('hidden');
+  $('minimap').classList.remove('hidden');
+  updateHUD();
+
+  const pc=$('phaser-container');
+  const W=pc.clientWidth||390;
+  const H=pc.clientHeight||500;
+
+  if(window._PG){
+    window._PG.scene.start('World');
+    $('loading-screen').classList.add('hidden');
+    return;
+  }
+
+  window._PG=new Phaser.Game({
+    type:Phaser.AUTO,
+    width:W,height:H,
+    backgroundColor:'#1a2e1a',
+    parent:'phaser-container',
+    physics:{default:'arcade',arcade:{gravity:{y:0},debug:false}},
+    scale:{mode:Phaser.Scale.RESIZE,autoCenter:Phaser.Scale.CENTER_BOTH},
+    scene:[WorldScene]
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  WORLD SCENE
+// ═══════════════════════════════════════════════════════════════
+class WorldScene extends Phaser.Scene {
+  constructor(){ super({key:'World'}); }
+
+  preload(){
+    // Nothing — 100% procedural
+    setLoad('Generare hartă...', 10);
+  }
+
+  create(){
+    G.scene=this;
+    const W=this.scale.width, H=this.scale.height;
+
+    setLoad('Desenare lume...', 30);
+
+    // ── Generate map ──────────────────────────────────────────
+    this.mapData=this.genMap();
+    setLoad('Clădiri și drumuri...', 55);
+
+    // ── Draw map to render texture ────────────────────────────
+    this.drawWorld();
+    setLoad('Sprite-uri personaje...', 75);
+
+    // ── Physics ───────────────────────────────────────────────
+    this.walls=this.physics.add.staticGroup();
+    this.addWalls();
+
+    // ── Player ────────────────────────────────────────────────
+    this.createPlayer();
+    setLoad('NPC-uri...', 88);
+
+    // ── NPCs ──────────────────────────────────────────────────
+    this.npcs=[];
+    this.createNPCs();
+
+    // ── Camera ────────────────────────────────────────────────
+    this.cameras.main.setBounds(0,0,WORLD_W,WORLD_H);
+    this.cameras.main.startFollow(this.player,true,0.09,0.09);
+    this.cameras.main.setDeadzone(55,55);
+
+    // ── Prompt text ───────────────────────────────────────────
+    this.promptTxt=this.add.text(0,0,'',{
+      fontFamily:"'Press Start 2P',monospace",fontSize:'6px',color:'#FFD600',
+      backgroundColor:'#000000dd',padding:{x:6,y:4},
+      stroke:'#000',strokeThickness:2
+    }).setDepth(20).setVisible(false).setScrollFactor(0);
+
+    // ── In-game clock ─────────────────────────────────────────
+    this.time.addEvent({
+      delay:12000, loop:true,
+      callback:()=>{
+        G.gameMin+=30;
+        if(G.gameMin>=60){ G.gameMin-=60; G.gameHour=(G.gameHour-8+1)%12+8; }
+        updateHUD();
+      }
+    });
+
+    // ── Autosave ──────────────────────────────────────────────
+    this.time.addEvent({delay:60000,loop:true,callback:saveGame});
+
+    // ── Minimap update ────────────────────────────────────────
+    this.time.addEvent({delay:2000,loop:true,callback:()=>this.drawMinimap()});
+    this.drawMinimap();
+
+    // ── Resize handler ────────────────────────────────────────
+    this.scale.on('resize',()=>{ this.cameras.main.setSize(this.scale.width,this.scale.height); });
+
+    setLoad('Gata!', 100);
+    setTimeout(()=>$('loading-screen').classList.add('hidden'), 400);
+
+    this.nearNPC=null; this.nearBuilding=null;
+  }
+
+  // ── Map generation ──────────────────────────────────────────
+  genMap(){
+    // Tile types: 0=grass,1=road,2=sidewalk,3=parking,4=water,5=darkgrass,6=building
+    const d=Array.from({length:MAP_H},()=>new Uint8Array(MAP_W));
+
+    // Base grass with variation
+    for(let y=0;y<MAP_H;y++) for(let x=0;x<MAP_W;x++) d[y][x]=Math.random()<0.18?5:0;
+
+    // Main horizontal roads
+    [[28,30],[14,15],[44,45]].forEach(([r1,r2])=>{
+      for(let x=0;x<MAP_W;x++) for(let y=r1;y<=r2;y++) d[y][x]=1;
+    });
+    // Main vertical roads
+    [[37,39],[20,21],[54,55]].forEach(([c1,c2])=>{
+      for(let y=0;y<MAP_H;y++) for(let x=c1;x<=c2;x++) d[y][x]=1;
+    });
+    // Sidewalks
+    [27,31,43,46].forEach(r=>{ for(let x=0;x<MAP_W;x++) d[r][x]=2; });
+    [36,40,53,56].forEach(c=>{ for(let y=0;y<MAP_H;y++) d[y][c]=2; });
+
+    // Parking (Mall area)
+    for(let x=40;x<=53;x++) for(let y=31;y<=43;y++) d[y][x]=3;
+
+    // Pond / water
+    for(let x=4;x<=11;x++) for(let y=4;y<=11;y++){
+      const dx=x-7.5, dy=y-7.5;
+      if(dx*dx+dy*dy<14) d[y][x]=4;
+    }
+
+    // Define buildings
+    this.buildings=[
+      {id:'flanco',  x:41,y:19,w:7,h:6,color:'#E30613',label:'FLANCO',  entry:{x:44,y:25}, interior:true},
+      {id:'atexl',   x:50,y:19,w:7,h:6,color:'#0044cc',label:'ATEXL',   entry:{x:53,y:25}, interior:true},
+      {id:'mage',    x:41,y:10,w:9,h:7,color:'#ff6600',label:'MagE',    entry:{x:45,y:17}, interior:true},
+      {id:'banca',   x:10,y:5, w:6,h:5,color:'#0a3a0a',label:'BANCĂ 🏦', entry:{x:13,y:10}},
+      {id:'cafenea', x:17,y:5, w:5,h:4,color:'#4a2800',label:'CAFENEA ☕',entry:{x:19,y:9}},
+      {id:'casa',    x:7, y:37,w:4,h:4,color:'#2a4a2a',label:'ACASĂ ⭐',  entry:{x:9, y:41}},
+      {id:'agentie', x:22,y:19,w:6,h:4,color:'#2a2a4a',label:'AGENȚIE',   entry:{x:25,y:23}},
+      {id:'depozit', x:58,y:34,w:10,h:8,color:'#3a3a3a',label:'DEPOZIT',  entry:{x:63,y:42}},
+      {id:'service', x:58,y:22,w:6,h:5,color:'#4a3a00',label:'SERVICE 📱', entry:{x:61,y:27}},
+      {id:'vulcan',  x:23,y:36,w:5,h:4,color:'#3a2a00',label:'VULCANIZARE',entry:{x:25,y:40}},
+    ];
+
+    // Mark building tiles
+    this.buildings.forEach(b=>{
+      for(let x=b.x;x<b.x+b.w&&x<MAP_W;x++)
+        for(let y=b.y;y<b.y+b.h&&y<MAP_H;y++) d[y][x]=6;
+    });
+
+    return d;
+  }
+
+  // ── Draw world to render texture ─────────────────────────────
+  drawWorld(){
+    const g=this.make.graphics({x:0,y:0,add:false});
+    const T=TILE;
+
+    const TCOL={
+      0:0x4a7c4e,1:0x555555,2:0x888888,
+      3:0x606060,4:0x2255aa,5:0x3d6b41,6:0x222222
+    };
+
+    // Base tiles
+    for(let y=0;y<MAP_H;y++){
+      for(let x=0;x<MAP_W;x++){
+        const t=this.mapData[y][x];
+        g.fillStyle(TCOL[t]??TCOL[0],1);
+        g.fillRect(x*T,y*T,T,T);
+
+        // Water detail
+        if(t===4){
+          g.fillStyle(0x3377cc,0.4);
+          g.fillEllipse(x*T+T/2,y*T+T/2,T-4,T-4);
+        }
+        // Road line
+        if(t===1&&(x%4===0)){
+          g.fillStyle(0xffffff,0.25);
+          g.fillRect(x*T+5,y*T+T/2-1,6,2);
+        }
+        // Parking lines
+        if(t===3&&(x%3===0)){
+          g.lineStyle(1,0xffffff,0.3);
+          g.lineBetween(x*T,y*T,x*T,y*T+T);
+        }
+      }
+    }
+
+    // Trees (procedural, deterministic from seed)
+    const treeSeed=[
+      [3,14],[6,20],[12,18],[15,33],[18,25],[9,34],[25,8],[30,12],[35,8],
+      [8,48],[13,50],[19,48],[26,52],[32,50],[38,52],[42,50],[48,52],
+      [62,28],[65,25],[70,28],[73,22],[68,32],[72,48],[65,52],[70,50],
+      [5,32],[11,28],[16,30],[3,42],[8,44],[12,42],[4,22],[3,28],
+    ];
+    treeSeed.forEach(([tx,ty])=>{
+      if(this.mapData[ty]?.[tx]<=1){
+        // Shadow
+        g.fillStyle(0x2a5a2a,0.6); g.fillCircle(tx*T+8,ty*T+13,7);
+        // Trunk
+        g.fillStyle(0x5a3010,1); g.fillRect(tx*T+6,ty*T+10,4,6);
+        // Canopy
+        g.fillStyle(0x2a7a2a,1); g.fillCircle(tx*T+8,ty*T+7,9);
+        g.fillStyle(0x3a9a3a,1); g.fillCircle(tx*T+8,ty*T+5,7);
+        g.fillStyle(0x4aaa4a,0.7); g.fillCircle(tx*T+10,ty*T+4,5);
+      }
+    });
+
+    // Buildings
+    this.buildings.forEach(b=>{
+      const bx=b.x*T, by=b.y*T, bw=b.w*T, bh=b.h*T;
+      const col=hex2n(b.color);
+
+      // Drop shadow
+      g.fillStyle(0x000000,0.25); g.fillRect(bx+3,by+3,bw,bh);
+      // Body
+      g.fillStyle(col,1); g.fillRect(bx,by,bw,bh);
+      // Roof highlight
+      g.fillStyle(0xffffff,0.08); g.fillRect(bx,by,bw,4);
+      // Side shade
+      g.fillStyle(0x000000,0.15); g.fillRect(bx+bw-4,by,4,bh);
+
+      // Windows
+      g.fillStyle(0xaaddff,0.75);
+      for(let wx=bx+6;wx<bx+bw-10;wx+=12){
+        for(let wy=by+8;wy<by+bh-10;wy+=12){
+          g.fillRect(wx,wy,7,7);
+          g.fillStyle(0x88ccff,0.4); g.fillRect(wx+1,wy+1,3,3);
+          g.fillStyle(0xaaddff,0.75);
+        }
+      }
+
+      // Door
+      g.fillStyle(0x221100,1); g.fillRect(bx+bw/2-5,by+bh-10,10,10);
+      g.fillStyle(0xffdd88,1); g.fillRect(bx+bw/2+2,by+bh-6,2,2);
+
+      // Entry zone marker (yellow ground stripe)
+      g.fillStyle(0xFFD600,0.4);
+      g.fillRect(b.entry.x*T-8,b.entry.y*T,T+16,4);
+    });
+
+    // Building labels on top
+    this.buildings.forEach(b=>{
+      const bx=b.x*T, by=b.y*T, bw=b.w*T;
+      const labelCanvas=document.createElement('canvas');
+      labelCanvas.width=bw; labelCanvas.height=12;
+      const lctx=labelCanvas.getContext('2d');
+      lctx.fillStyle='rgba(0,0,0,0.7)'; lctx.fillRect(0,0,bw,12);
+      lctx.fillStyle='#FFD600';
+      lctx.font='bold 8px "Press Start 2P",monospace';
+      lctx.textAlign='center';
+      lctx.fillText(b.label,bw/2,9);
+      // We'll add labels as Phaser text objects later
+    });
+
+    const rt=this.add.renderTexture(0,0,WORLD_W,WORLD_H).setOrigin(0,0).setDepth(0);
+    rt.draw(g,0,0);
+    g.destroy();
+
+    // Building labels as text
+    this.buildings.forEach(b=>{
+      this.add.text(
+        b.x*T+(b.w*T)/2, b.y*T+4,
+        b.label,
+        {fontFamily:"'Press Start 2P',monospace",fontSize:'5px',color:'#FFD600',
+         backgroundColor:'#000000bb',padding:{x:3,y:2}}
+      ).setOrigin(0.5,0).setDepth(2);
+    });
+  }
+
+  // ── Physics walls ────────────────────────────────────────────
+  addWalls(){
+    // Buildings
+    this.buildings.forEach(b=>{
+      const body=this.walls.create(
+        b.x*TILE+(b.w*TILE)/2,
+        b.y*TILE+(b.h*TILE)/2,
+        null
+      ).setVisible(false).setActive(true);
+      body.setSize(b.w*TILE-2,b.h*TILE-2);
+      body.refreshBody();
+      body.buildingId=b.id;
+    });
+
+    // Water border
+    for(let x=4;x<=11;x++) for(let y=4;y<=11;y++){
+      if(this.mapData[y]?.[x]===4){
+        const body=this.walls.create(x*TILE+8,y*TILE+8,null).setVisible(false).setActive(true);
+        body.setSize(TILE,TILE); body.refreshBody();
+      }
+    }
+
+    // World edge walls (invisible)
+    [[WORLD_W/2,0,WORLD_W,4],[WORLD_W/2,WORLD_H,WORLD_W,4],
+     [0,WORLD_H/2,4,WORLD_H],[WORLD_W,WORLD_H/2,4,WORLD_H]].forEach(([x,y,w,h])=>{
+      const b=this.walls.create(x,y,null).setVisible(false).setActive(true);
+      b.setSize(w,h); b.refreshBody();
+    });
+  }
+
+  // ── Player sprite ────────────────────────────────────────────
+  createPlayer(){
+    const app=APPEARANCES[G.appearance]||APPEARANCES[0];
+
+    // Generate player spritesheet
+    const fw=16,fh=24,cols=4,rows=4;
+    this.textures.remove('player'); // always regenerate (appearance may change)
+    const g=this.make.graphics({x:0,y:0,add:false});
+    for(let dir=0;dir<rows;dir++){
+      for(let fr=0;fr<cols;fr++){
+        this.drawPlayerFrame(g,fr*fw,dir*fh,app,dir,fr);
+      }
+    }
+    g.generateTexture('player',fw*cols,fh*rows);
+    g.destroy();
+    // Add frame data so Phaser knows each cell
+    const tex=this.textures.get('player');
+    for(let row=0;row<rows;row++){
+      for(let col=0;col<cols;col++){
+        tex.add(row*cols+col, 0, col*fw, row*fh, fw, fh);
+      }
+    }
+
+    // Start near Flanco
+    const startX=38*TILE, startY=32*TILE;
+    this.player=this.physics.add.sprite(startX,startY,'player',0);
+    this.player.setSize(10,12).setOffset(3,12).setDepth(5).setCollideWorldBounds(true);
+    this.player.setMaxVelocity(200,200);
+
+    // Animations using named integer frames
+    [['walk_d',0],['walk_u',1],['walk_l',2],['walk_r',3]].forEach(([key,row])=>{
+      if(this.anims.exists(key)) this.anims.remove(key);
+      this.anims.create({
+        key, frameRate:8, repeat:-1,
+        frames:[0,1,2,3].map(col=>({key:'player',frame:row*cols+col}))
+      });
+    });
+
+    // Collision
+    this.physics.add.collider(this.player,this.walls);
+
+    this.playerDir='d';
+  }
+
+  drawPlayerFrame(g,ox,oy,app,dir,fr){
+    const skin=hex2n(app.skinTone||'#FDBCB4');
+    const hair=hex2n(app.hair);
+    const shirt=hex2n(app.shirt);
+    const walk=(fr===1||fr===3);
+    const lo1=walk?-2:0, lo2=walk?2:0;
+
+    // Shadow
+    g.fillStyle(0x000000,0.25); g.fillEllipse(ox+8,oy+23,12,4);
+    // Shoes
+    g.fillStyle(0x111111,1);
+    g.fillRect(ox+3,oy+22+lo1,4,2); g.fillRect(ox+9,oy+22-lo2,4,2);
+    // Legs
+    g.fillStyle(0x1a1a44,1);
+    g.fillRect(ox+3,oy+16,4,6+lo1); g.fillRect(ox+9,oy+16,4,6-lo2);
+    // Body
+    g.fillStyle(shirt,1); g.fillRect(ox+3,oy+9,10,8);
+    // Badge
+    g.fillStyle(0xFFD600,1); g.fillRect(ox+4,oy+10,5,2);
+    // Arms
+    const as=walk?(fr===1?1:-1):0;
+    g.fillStyle(shirt,1);
+    g.fillRect(ox+1,oy+10,2,5+as); g.fillRect(ox+13,oy+10,2,5-as);
+    g.fillStyle(skin,1);
+    g.fillRect(ox+1,oy+15+as,2,2); g.fillRect(ox+13,oy+15-as,2,2);
+    // Head
+    g.fillStyle(skin,1); g.fillRect(ox+4,oy+2,8,8);
+    // Hair
+    g.fillStyle(hair,1); g.fillRect(ox+4,oy+2,8,3);
+    if(app.gender==='F'){ g.fillRect(ox+4,oy+2,2,8); g.fillRect(ox+10,oy+2,2,8); }
+    // Eyes (only for front/sides)
+    if(dir!==1){
+      g.fillStyle(0x222222,1);
+      g.fillRect(ox+5,oy+6,2,2); g.fillRect(ox+9,oy+6,2,2);
+    }
+    // Backpack (walking away)
+    if(dir===1){ g.fillStyle(0x2255aa,1); g.fillRect(ox+1,oy+9,3,7); }
+  }
+
+  // ── NPCs ─────────────────────────────────────────────────────
+  createNPCs(){
+    const legendaryPositions=[
+      {data:LEGENDARI.vasile,  tx:44,ty:32},
+      {data:LEGENDARI.cornelia,tx:25,ty:17},
+      {data:LEGENDARI.gigel,   tx:52,ty:15},
+      {data:LEGENDARI.coste,   tx:61,ty:38},
+      {data:LEGENDARI.elena,   tx:30,ty:35},
+    ];
+    legendaryPositions.forEach(({data,tx,ty})=>this.spawnNPC(tx*TILE+8,ty*TILE+8,data));
+
+    // Random clients on map
+    const rndPositions=[
+      [34,32],[36,32],[39,32],[42,33],[47,33],[51,33],
+      [25,30],[22,25],[15,20],[12,30],[10,35],[18,40],
+      [28,40],[35,40],[60,38],[63,40],[66,35],[70,40],
+      [38,20],[35,25],[30,20],[45,20],[50,25],[55,20],
+    ];
+    rndPositions.forEach(([tx,ty])=>this.spawnNPC(tx*TILE+8,ty*TILE+8,makeClient()));
+  }
+
+  spawnNPC(wx,wy,data){
+    const isLeg=!!data.legendary;
+    const key='npc_'+data.id;
+
+    if(!this.textures.exists(key)){
+      const g=this.make.graphics({x:0,y:0,add:false});
+      this.drawNPCTex(g,data,isLeg);
+      g.generateTexture(key,16,24);
+      g.destroy();
+    }
+
+    const spr=this.physics.add.sprite(wx,wy,key,0).setDepth(4);
+    spr.setSize(10,12).setOffset(3,12).setCollideWorldBounds(true);
+
+    const npc={spr,data,isLeg,
+      spawnX:wx,spawnY:wy,
+      moveTimer:rnd(60,200),moveDelay:rnd(60,200),
+      vx:0,vy:0,
+      interacted:false,
+      exclaim:null,nameTag:null
+    };
+
+    if(isLeg){
+      npc.exclaim=this.add.text(wx,wy-22,'!',{
+        fontFamily:"'Press Start 2P',monospace",fontSize:'10px',color:'#FFD600',
+        stroke:'#000',strokeThickness:2
+      }).setDepth(8).setOrigin(0.5,1);
+      npc.nameTag=this.add.text(wx,wy-28,data.name,{
+        fontFamily:"'Press Start 2P',monospace",fontSize:'5px',color:'#FFD600',
+        backgroundColor:'#000000cc',padding:{x:3,y:2}
+      }).setDepth(8).setOrigin(0.5,1);
+      this.tweens.add({targets:npc.exclaim,scaleY:1.3,duration:500,yoyo:true,repeat:-1,ease:'Sine.InOut'});
+    }
+
+    this.physics.add.collider(spr,this.walls);
+    this.npcs.push(npc);
+    return npc;
+  }
+
+  drawNPCTex(g,data,isLeg){
+    const rig=data.rig||5;
+    let body=0x44aa44;
+    if(rig>=8) body=0xcc3333;
+    else if(rig>=5) body=0xaaaa22;
+    if(isLeg) body=0x9933cc;
+
+    const hairCols=[0x3d2200,0xcc9900,0x111111,0xcc4400,0x777777,0x442200];
+    const hIdx=(data.id||'').split('').reduce((s,c)=>s+c.charCodeAt(0),0)%hairCols.length;
+
+    g.fillStyle(0x000000,0.2); g.fillEllipse(8,23,12,4);
+    g.fillStyle(0x111111,1); g.fillRect(3,22,4,2); g.fillRect(9,22,4,2);
+    g.fillStyle(0x1a1a44,1); g.fillRect(3,16,4,6); g.fillRect(9,16,4,6);
+    g.fillStyle(body,1); g.fillRect(3,9,10,8);
+    if(isLeg){ g.fillStyle(0xFFD600,1); g.fillRect(5,10,6,2); } // special badge
+    g.fillStyle(0xFDBCB4,1); g.fillRect(4,2,8,8);
+    g.fillStyle(hairCols[hIdx],1); g.fillRect(4,2,8,3);
+    g.fillStyle(0x222222,1); g.fillRect(5,6,2,2); g.fillRect(9,6,2,2);
+  }
+
+  // ── Update loop ──────────────────────────────────────────────
+  update(){
+    if(G.dialogActive){ this.player.setVelocity(0,0); return; }
+    this.setPlayerVel();
+    this.updatePlayerAnim();
+    this.updateNPCs();
+    this.checkProximity();
+  }
+
+  setPlayerVel(){
+    const spd=100;
+    let vx=0,vy=0;
+    if(G.keys.left) vx=-spd;
+    else if(G.keys.right) vx=spd;
+    if(G.keys.up) vy=-spd;
+    else if(G.keys.down) vy=spd;
+    if(vx&&vy){ vx*=0.707; vy*=0.707; }
+    this.player?.setVelocity(vx,vy);
+    if(vx<0) this.playerDir='l';
+    else if(vx>0) this.playerDir='r';
+    else if(vy<0) this.playerDir='u';
+    else if(vy>0) this.playerDir='d';
+  }
+
+  updatePlayerAnim(){
+    const moving=Math.abs(this.player.body.velocity.x)>5||Math.abs(this.player.body.velocity.y)>5;
+    const animKey='walk_'+(this.playerDir||'d');
+    if(moving){
+      if(this.player.anims.currentAnim?.key!==animKey) this.player.play(animKey,true);
+    } else {
+      this.player.anims.stop();
+      // Idle frame: first frame of current direction (cols=4 per row)
+      const rowMap={d:0,u:4,l:8,r:12};
+      this.player.setFrame(rowMap[this.playerDir||'d']??0);
+    }
+  }
+
+  updateNPCs(){
+    const px=this.player.x, py=this.player.y;
+    this.npcs.forEach(npc=>{
+      if(npc.exclaim) npc.exclaim.setPosition(npc.spr.x,npc.spr.y-22);
+      if(npc.nameTag) npc.nameTag.setPosition(npc.spr.x,npc.spr.y-28);
+
+      npc.moveTimer--;
+      if(npc.moveTimer<=0){
+        npc.moveTimer=npc.moveDelay=rnd(80,220);
+        const d=dist({x:npc.spr.x,y:npc.spr.y},{x:npc.spawnX,y:npc.spawnY});
+        if(d>96){
+          npc.vx=Math.sign(npc.spawnX-npc.spr.x)*35;
+          npc.vy=Math.sign(npc.spawnY-npc.spr.y)*35;
+        } else {
+          const dirs=[[35,0],[-35,0],[0,35],[0,-35],[0,0],[0,0]];
+          const dir=pick(dirs); npc.vx=dir[0]; npc.vy=dir[1];
+        }
+        npc.spr.setVelocity(npc.vx,npc.vy);
+        if(npc.vx||npc.vy){
+          this.time.delayedCall(rnd(400,900),()=>{ if(npc.spr.body) npc.spr.setVelocity(0,0); });
+        }
+      }
+
+      // Face player when very close
+      if(dist({x:npc.spr.x,y:npc.spr.y},{x:px,y:py})<28)
+        npc.spr.setVelocity(0,0);
+    });
+  }
+
+  checkProximity(){
+    const px=this.player.x, py=this.player.y;
+    let nearNPC=null, nearBld=null;
+
+    for(const npc of this.npcs){
+      if(npc.interacted&&!npc.isLeg) continue;
+      if(dist({x:npc.spr.x,y:npc.spr.y},{x:px,y:py})<30){ nearNPC=npc; break; }
+    }
+
+    if(!nearNPC){
+      for(const b of this.buildings){
+        const ex=b.entry.x*TILE, ey=b.entry.y*TILE;
+        if(Math.abs(px-ex)<28&&Math.abs(py-ey)<28){ nearBld=b; break; }
+      }
+    }
+
+    this.nearNPC=nearNPC; this.nearBuilding=nearBld;
+
+    // Update prompt
+    const CW=this.scale.width, CH=this.scale.height;
+    if(nearNPC){
+      this.promptTxt.setText('[A] Vorbește cu '+(nearNPC.data.name||'clientul'))
+        .setPosition(8,CH-8).setOrigin(0,1).setVisible(true);
+    } else if(nearBld){
+      this.promptTxt.setText('[A] Intră în '+nearBld.label)
+        .setPosition(8,CH-8).setOrigin(0,1).setVisible(true);
+    } else {
+      this.promptTxt.setVisible(false);
+    }
+
+    // A key edge detection
+    const aDown=G.keys.a;
+    if(aDown&&!G.aWasDown) this.onA();
+    G.aWasDown=aDown;
+  }
+
+  onA(){
+    if(G.dialogActive) return;
+    if(this.nearNPC) this.talkToNPC(this.nearNPC);
+    else if(this.nearBuilding) this.enterBuilding(this.nearBuilding);
+  }
+
+  // ── NPC Dialog ───────────────────────────────────────────────
+  async talkToNPC(npc){
+    if(G.dialogActive) return;
+    G.dialogActive=true;
+    this.player.setVelocity(0,0);
+    const client=npc.data;
+
+    openDialog(client.name||client.nome, client.replica);
+
+    setTimeout(()=>{
+      showChoicesUI(getChoices(client), async choice=>{
+        closeChoicesUI();
+        setDialogText('⏳ Se procesează...');
+
+        const result=await callGroq(client,choice.text);
+        setDialogText(result.replica||'...');
+        showContinue(true);
+
+        const success=result.goodChoice||(result.effect==='convins')||(result.effect==='interesat');
+        const isFirstTime=!G.npcConvinsi[client.id];
+
+        setTimeout(()=>{
+          closeDialog();
+          if(success&&isFirstTime){
+            const r=client.reward||{bani:80,xp:20};
+            addBani(r.bani); addXP(r.xp); addMoral(+8);
+            notify(`✅ ${client.name} convins! +${r.bani} RON 🎉`);
+            if(!npc.isLeg) npc.interacted=true;
+            if(npc.exclaim) npc.exclaim.setVisible(false);
+            if(npc.nameTag) npc.nameTag.setVisible(false);
+            G.npcConvinsi[client.id]=true;
+            saveGame();
+          } else if(!success){
+            addMoral(-5);
+            notify('😕 '+client.name+' nu e convins. Încearcă altceva!');
+          } else {
+            notify('💬 '+client.name+' e deja clientul tău fidel!');
+          }
+        },1600);
+      });
+    },900);
+  }
+
+  enterBuilding(bld){
+    const msgs={
+      flanco:`Intri în FLANCO. Bine ai venit, angajat ${G.name}! (Interioare — Phase 2)`,
+      atexl:'ATEXL — Concurența noastră. (Interioare — Phase 2)',
+      mage:'MagE — Imperiul digital. (Interioare — Phase 2)',
+      banca:'BANCĂ — Depozit și împrumuturi. (Phase 2)',
+      cafenea:'CAFENEA — +20 Moral dacă stai 5 minute. (Phase 2)',
+      casa:'ACASĂ — Odihna îți reface moralul. (Phase 2)',
+      default:'Clădire blocată momentan. (Phase 2)'
+    };
+    notify('🏢 '+(msgs[bld.id]||msgs.default));
+  }
+
+  // ── Minimap ──────────────────────────────────────────────────
+  drawMinimap(){
+    const mc=$('minimap-canvas');
+    if(!mc||!this.player) return;
+    const mw=mc.width, mh=mc.height;
+    const ctx=mc.getContext('2d');
+    ctx.clearRect(0,0,mw,mh);
+
+    // Scale factor
+    const sx=mw/WORLD_W, sy=mh/WORLD_H;
+
+    // Draw simplified zones
+    ctx.fillStyle='#2a4a2a'; ctx.fillRect(0,0,mw,mh); // grass base
+
+    // Roads
+    ctx.fillStyle='#555';
+    [[28,30],[14,15],[44,45]].forEach(([r1,r2])=>ctx.fillRect(0,r1*TILE*sy,(mw),(r2-r1+1)*TILE*sy));
+    [[37,39],[20,21],[54,55]].forEach(([c1,c2])=>ctx.fillRect(c1*TILE*sx,0,(c2-c1+1)*TILE*sx,mh));
+
+    // Buildings
+    this.buildings.forEach(b=>{
+      ctx.fillStyle=b.color; ctx.globalAlpha=0.8;
+      ctx.fillRect(b.x*TILE*sx,b.y*TILE*sy,b.w*TILE*sx,b.h*TILE*sy);
+      ctx.globalAlpha=1;
+    });
+
+    // Water (pond)
+    ctx.fillStyle='#2255aa'; ctx.globalAlpha=0.7;
+    ctx.beginPath();
+    ctx.ellipse(7.5*TILE*sx,7.5*TILE*sy,4*TILE*sx,4*TILE*sy,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha=1;
+
+    // NPC dots
+    this.npcs.forEach(npc=>{
+      ctx.fillStyle=npc.isLeg?'#FFD600':'#88ff88';
+      ctx.fillRect(npc.spr.x*sx-1,npc.spr.y*sy-1,2,2);
+    });
+
+    // Player dot (blinking)
+    const blink=Math.floor(Date.now()/500)%2;
+    if(blink){
+      ctx.fillStyle='#ff4444';
+      ctx.fillRect(this.player.x*sx-2,this.player.y*sy-2,4,4);
+    }
+  }
+}
+
+// ─── Dialog UI ───────────────────────────────────────────────────
+function openDialog(speaker, text){
+  $('dlg-speaker').textContent=(speaker||'NPC')+':';
+  $('dlg-choices').innerHTML='';
+  $('dlg-continue').classList.add('hidden');
+  $('dialog-box').classList.remove('hidden');
+  typeText('dlg-text',text,38,()=>{ if(!$('dlg-choices').children.length) showContinue(true); });
+}
+function setDialogText(text){ $('dlg-text').textContent=text; }
+function showContinue(on){ $('dlg-continue').classList.toggle('hidden',!on); }
+function showChoicesUI(choices,cb){
+  const cont=$('dlg-choices');
+  cont.innerHTML='';
+  showContinue(false);
+  choices.forEach((c,i)=>{
+    const btn=document.createElement('div');
+    btn.className='dchoice';
+    btn.textContent=['A','B','C'][i]+'. '+c.text;
+    btn.onclick=()=>{ if(!G.dialogActive) return; cb(c); };
+    cont.appendChild(btn);
+  });
+}
+function closeChoicesUI(){ $('dlg-choices').innerHTML=''; }
+function closeDialog(){ $('dialog-box').classList.add('hidden'); G.dialogActive=false; }
+
+let _tt;
+function typeText(elId,text,ms,done){
+  const el=$(elId); el.textContent=''; let i=0;
+  clearInterval(_tt);
+  _tt=setInterval(()=>{
+    el.textContent+=text[i]||''; i++;
+    if(i>text.length){ clearInterval(_tt); if(done) done(); }
+  },ms);
+}
+
+// ─── Loading helper ───────────────────────────────────────────────
+function setLoad(msg,pct){
+  const b=$('load-bar'); if(b) b.style.width=pct+'%';
+  const l=$('load-label'); if(l) l.textContent=msg;
+}
+
+// ─── Init ─────────────────────────────────────────────────────────
+window.addEventListener('load',initMenu);
+</script>
+</body>
+</html>
