@@ -768,7 +768,7 @@ const RETAIL_FACTS = {
     retur:'45 zile calendaristice (cel mai generos din piață; Altex/eMAG = 14 resp. 30)',
     garantie_legala:'2 ani persoane fizice, 1 an persoane juridice (conf. lege UE)',
     garantie_ext:'Garanția Extinsă Flanco: 1-2 ani extra',
-    rate:'Până la 40 rate fără dobândă prin Oney sau carduri bancare, aprobare instant',
+    rate:'Oney: 3 sau 4 rate, prima la cumpărare, sume 500–2500 RON',
     livrare:'Gratuită de la 200 lei sau ridicare gratuită din orice magazin Flanco',
     serviciu_cheie:'Preluăm produsul defect direct din magazin — tu nu cauți service',
     serviciu2:'Reparație electrocasnice mari la domiciliu (tehnicieni la tine acasă)',
@@ -879,7 +879,7 @@ function getChoices(client){
     flanco:{
       pret:[
         'Avem 45 zile retur — de 3× mai mult decât concurența.',
-        'Rate fără dobândă până la 40 rate prin Oney, aprobare instant.',
+        'Oney: 3 sau 4 rate fără dobândă, prima la cumpărare (500–2500 RON).',
         'Garanția Extinsă Flanco: protecție 1-2 ani extra peste lege.'
       ],
       calitate:[
@@ -895,7 +895,7 @@ function getChoices(client){
       incredere:[
         'Returnul 45 zile — timp să testezi acasă fără presiune.',
         'Garanție gestionată intern, nu trimiți tu produsul la service.',
-        'Finanțare Oney 100% online, aprobată pe telefon în 5 minute.'
+        'Finanțare Oney: 3-4 rate, prima la cumpărare, aprobare în 5 minute.'
       ],
       urgenta:[
         'Produsul e în stoc, îl pregătim în 10 minute.',
@@ -1807,11 +1807,11 @@ const STORE_CFG = {
 // DEMO_FEATURES: caracteristici corecte = fapte reale per magazin
 const DEMO_FEATURES_STORE = {
   flanco:{
-    pret:     {correct:['Retur 45 zile','Rate Oney 40×','Garanție extinsă'],   wrong:['Culori variate','App dedicată','Expediere prioritară']},
+    pret:     {correct:['Retur 45 zile','Oney 3-4 rate','Garanție extinsă'],    wrong:['Culori variate','App dedicată','Expediere prioritară']},
     calitate: {correct:['Certificare CE','Service în magazin','Reparație acasă'],wrong:['4 culori disponibile','Ambalaj premium','Livrare rapidă']},
     comparatie:{correct:['45 zile vs 14 Altex','Service intern','Livrare 200 lei'],wrong:['Cel mai popular','Design modern','Baterie mare']},
     incredere:{correct:['Retur 45 zile','Garanție 2 ani','Service intern'],    wrong:['Design slim','Ecran AMOLED','Stocare 256GB']},
-    urgenta:  {correct:['În stoc acum','Ridicare imediată','Rate instant Oney'],wrong:['Livrare expres','Online disponibil','Rezervare rapidă']}
+    urgenta:  {correct:['În stoc acum','Ridicare imediată','Oney aprobare 5 min'],wrong:['Livrare expres','Online disponibil','Rezervare rapidă']}
   },
   atexl:{
     pret:     {correct:['2× Diferența','Rate Credex','Extragaranție'],         wrong:['App dedicată','Ambalaj original','Livrare rapidă']},
@@ -1840,7 +1840,7 @@ const STORE_ARGS = {
   flanco:{
     pret:[
       {text:'La Flanco ai 45 zile retur — de 3 ori mai mult ca alții.',  keyword:'45 zile'},
-      {text:'Rate fără dobândă: până la 40 rate prin Oney, instant.',     keyword:'rate'},
+      {text:'Oney: 3-4 rate fără dobândă, prima acum, suma 500–2500 RON.',  keyword:'oney'},
       {text:'Garanția Extinsă Flanco: 1-2 ani extra față de lege.',       keyword:'garanție extinsă'},
     ],
     calitate:[
@@ -1856,7 +1856,7 @@ const STORE_ARGS = {
     incredere:[
       {text:'Returnezi 45 zile fără întrebări — testezi liniștit acasă.',  keyword:'retur'},
       {text:'Garanția gestionată intern: tu aduci, noi rezolvăm.',         keyword:'garanție'},
-      {text:'Finanțare Oney 100% online — aprobare în 5 minute pe telefon.',keyword:'finanțare'},
+      {text:'Oney: 3-4 rate, prima plătită acum — aprovare în 5 min pe telefon.',keyword:'oney'},
     ],
     urgenta:[
       {text:'E în stoc acum — pregătim factura și pleci în 10 minute.',   keyword:'stoc'},
