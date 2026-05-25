@@ -258,6 +258,146 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action
   z-index:200;overflow:hidden;cursor:pointer;
 }
 #minimap canvas{display:block;image-rendering:pixelated;}
+
+/* ─── JOB BADGE in HUD ───────────────── */
+#hud-job{font-family:'Press Start 2P',monospace;font-size:5px;padding:2px 5px;border-radius:2px;border:1px solid;}
+
+/* ─── BATTLE SCREEN ──────────────────── */
+#battle-screen{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  z-index:900;display:flex;flex-direction:column;
+  background:#0a0818;font-family:'Press Start 2P',monospace;
+}
+.bt-client-zone{
+  flex:0 0 42%;display:flex;align-items:center;
+  padding:10px 14px;gap:14px;
+  background:linear-gradient(180deg,#0f1a30 0%,#0a0818 100%);
+  border-bottom:2px solid #1a1a4a;
+  position:relative;overflow:hidden;
+}
+.bt-client-zone::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,0.02) 3px,rgba(255,255,255,0.02) 4px);
+  pointer-events:none;
+}
+#bc-sprite{
+  width:64px;height:80px;flex-shrink:0;
+  image-rendering:pixelated;border-radius:2px;
+}
+.bc-info{flex:1;}
+.bc-name{font-size:7px;color:#FFD600;display:block;margin-bottom:6px;}
+.bc-type{font-size:5px;color:#888;margin-bottom:8px;display:block;}
+.bar-label{font-size:4px;color:#666;margin-bottom:3px;}
+.hp-bar-wrap{height:10px;background:#222;border:2px solid #444;overflow:hidden;border-radius:2px;position:relative;}
+.hp-bar-fill{height:100%;transition:width 0.5s ease;border-radius:1px;}
+.bc-dialog{
+  position:absolute;bottom:6px;left:10px;right:10px;
+  background:rgba(0,0,0,0.8);border:2px solid #333;
+  padding:6px 8px;
+}
+#bc-dialog-txt{font-family:'VT323',monospace;font-size:16px;color:#eee;line-height:1.3;}
+
+.bt-player-zone{
+  flex:0 0 22%;display:flex;align-items:center;
+  padding:8px 14px;gap:12px;
+  background:#080812;border-bottom:2px solid #1a1a2a;
+}
+#bp-sprite{width:40px;height:52px;flex-shrink:0;image-rendering:pixelated;}
+.bp-info{flex:1;}
+.bp-name{font-size:7px;color:#aaffaa;display:block;margin-bottom:4px;}
+.bp-niv{font-size:5px;color:#666;display:block;margin-bottom:6px;}
+.moral-bar-wrap{height:8px;background:#222;border:2px solid #444;overflow:hidden;border-radius:2px;}
+#bp-moral-fill{height:100%;background:linear-gradient(90deg,#0044cc,#44aaff);transition:width 0.4s;}
+#battle-voucher-info{font-size:5px;color:#888;margin-top:4px;}
+
+.bt-menu-zone{
+  flex:1;padding:8px 10px;
+  display:flex;flex-direction:column;gap:6px;
+  overflow:hidden;
+}
+#bt-prompt{font-size:7px;color:#FFD600;margin-bottom:4px;}
+#bt-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.bat-btn{
+  background:#0d0d22;border:2px solid #333;
+  color:#ccc;font-family:'Press Start 2P',monospace;font-size:6px;
+  padding:10px 6px;cursor:pointer;text-align:center;
+  transition:border-color 0.1s,color 0.1s,background 0.1s;
+  border-radius:3px;
+}
+.bat-btn:active,.bat-btn:hover{border-color:#FFD600;color:#FFD600;background:#111128;}
+.bat-btn.disabled{opacity:0.35;pointer-events:none;}
+.bat-btn-wide{grid-column:1/-1;border-color:#E30613;color:#E30613;}
+.bat-btn-wide:hover,.bat-btn-wide:active{background:#1a0008;border-color:#ff4444;color:#ff4444;}
+
+#bt-sub-menu{display:flex;flex-direction:column;gap:4px;}
+.bsub-btn{
+  background:#0a1a0a;border:2px solid #1a4a1a;
+  color:#88cc88;font-family:'VT323',monospace;font-size:16px;
+  padding:8px 10px;cursor:pointer;text-align:left;
+  transition:border-color 0.1s;border-radius:2px;
+}
+.bsub-btn:hover,.bsub-btn:active{border-color:#00cc44;color:#aaffaa;}
+
+/* Slider voucher */
+#bt-voucher-zone{display:flex;flex-direction:column;gap:8px;}
+#voucher-slider{width:100%;accent-color:#FFD600;}
+#voucher-preview{font-family:'VT323',monospace;font-size:16px;color:#FFD600;}
+
+/* Demonstrează mini-game */
+#bt-demo-zone{display:flex;flex-direction:column;gap:6px;}
+.demo-timer-wrap{height:6px;background:#222;border:2px solid #444;overflow:hidden;}
+#demo-timer-fill{height:100%;background:#E30613;transition:width 0.1s linear;}
+#demo-features{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.demo-feat-btn{
+  background:#0a1a2a;border:2px solid #1a3a4a;
+  color:#88aacc;font-family:'VT323',monospace;font-size:14px;
+  padding:8px;cursor:pointer;text-align:center;border-radius:3px;
+  transition:all 0.1s;
+}
+.demo-feat-btn.tapped{border-color:#00cc44;background:#0a2a0a;color:#aaffaa;}
+.demo-feat-btn.wrong{border-color:#E30613;background:#1a0008;color:#ff6666;}
+
+/* Result overlay (on top of battle) */
+#bt-result{
+  position:absolute;inset:0;background:rgba(0,0,0,0.88);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:10;gap:10px;
+}
+#bt-result-icon{font-size:52px;}
+#bt-result-title{font-size:11px;text-align:center;}
+#bt-result-details{font-family:'VT323',monospace;font-size:18px;color:#ccc;text-align:center;line-height:1.6;}
+
+/* Shake animation */
+@keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
+.shake{animation:shake 0.35s ease;}
+@keyframes flashRed{0%,100%{filter:brightness(1);}50%{filter:brightness(2) sepia(1) hue-rotate(-30deg);}}
+.hit-flash{animation:flashRed 0.3s ease;}
+
+/* ─── HIRE SCREEN ────────────────────── */
+#hire-screen{
+  position:fixed;inset:0;z-index:850;
+  background:rgba(0,0,0,0.94);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;padding:24px;
+  font-family:'Press Start 2P',monospace;
+}
+#hire-title{font-size:9px;color:#FFD600;text-align:center;}
+#hire-body{font-family:'VT323',monospace;font-size:17px;color:#ccc;text-align:center;line-height:1.6;max-width:320px;}
+.hire-btn{
+  background:#007733;color:white;border:3px solid #00cc55;
+  padding:12px 24px;font-family:'Press Start 2P',monospace;font-size:8px;
+  cursor:pointer;box-shadow:3px 3px 0 #003311;margin:4px;
+}
+.hire-btn-cancel{
+  background:transparent;color:#555;border:2px solid #333;
+  padding:10px 20px;font-family:'Press Start 2P',monospace;font-size:7px;
+  cursor:pointer;margin:4px;
+}
+.hire-btn-quit{
+  background:#440000;color:#ff4444;border:2px solid #660000;
+  padding:10px 20px;font-family:'Press Start 2P',monospace;font-size:7px;
+  cursor:pointer;margin:4px;
+}
 </style>
 </head>
 <body>
@@ -283,6 +423,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action
     <div class="hud-item">
       <div class="hud-lbl">🕐 ORA</div>
       <div class="hud-val" id="hud-time">08:00</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-lbl">JOB</div>
+      <div id="hud-job" style="font-family:'Press Start 2P',monospace;font-size:5px;padding:2px 4px;border:1px solid #333;color:#555">FĂRĂ</div>
     </div>
   </div>
 
@@ -335,6 +479,76 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action
 <div id="minimap" class="hidden"><canvas id="minimap-canvas" width="66" height="50"></canvas></div>
 <div id="notif"></div>
 
+<!-- BATTLE SCREEN -->
+<div id="battle-screen" class="hidden">
+  <div class="bt-client-zone">
+    <canvas id="bc-sprite" width="64" height="80"></canvas>
+    <div class="bc-info">
+      <span class="bc-name" id="bc-name">Client</span>
+      <span class="bc-type" id="bc-type">agresiv · obiecție preț</span>
+      <div class="bar-label">REZISTENȚĂ LA CUMPĂRARE</div>
+      <div class="hp-bar-wrap">
+        <div class="hp-bar-fill" id="bc-hp-fill" style="width:100%;background:linear-gradient(90deg,#cc0000,#ff4444)"></div>
+      </div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:5px;color:#888;margin-top:3px" id="bc-hp-txt">200/200</div>
+    </div>
+    <div class="bc-dialog" id="bc-dialog">
+      <div id="bc-dialog-txt"></div>
+    </div>
+  </div>
+
+  <div class="bt-player-zone">
+    <canvas id="bp-sprite" width="40" height="52"></canvas>
+    <div class="bp-info">
+      <span class="bp-name" id="bp-name">Andrei</span>
+      <span class="bp-niv" id="bp-niv">Niv.1 · Persuasiune 3/10</span>
+      <div class="bar-label">MORAL</div>
+      <div class="moral-bar-wrap"><div id="bp-moral-fill" style="width:100%"></div></div>
+      <div id="battle-voucher-info">Voucher: NU</div>
+    </div>
+  </div>
+
+  <div class="bt-menu-zone">
+    <div id="bt-prompt">Ce faci?</div>
+    <div id="bt-actions">
+      <button class="bat-btn" id="bact-arg" onclick="bAction('argumenteaza')">🗣 ARGUMENTEAZĂ</button>
+      <button class="bat-btn" id="bact-demo" onclick="bAction('demonstreaza')">📱 DEMONSTREAZĂ</button>
+      <button class="bat-btn" id="bact-vouch" onclick="bAction('voucher')">🏷 VOUCHER</button>
+      <button class="bat-btn" id="bact-sef" onclick="bAction('suna_seful')">📞 SUNĂ ȘEFUL</button>
+      <button class="bat-btn bat-btn-wide" onclick="bAction('fugi')">🏃 FUGI</button>
+    </div>
+    <div id="bt-sub-menu" class="hidden"></div>
+    <div id="bt-voucher-zone" class="hidden">
+      <div style="font-family:'VT323',monospace;font-size:15px;color:#888">Alege reducerea (din comisionul tău):</div>
+      <input type="range" id="voucher-slider" min="5" max="20" step="5" value="5" oninput="updateVoucherPreview()">
+      <div id="voucher-preview">5% reducere</div>
+      <div style="display:flex;gap:8px">
+        <button class="bat-btn" onclick="confirmVoucher()" style="flex:1">✅ APLICĂ</button>
+        <button class="bat-btn" onclick="closeBattleSubmenu()" style="flex:1">← ÎNAPOI</button>
+      </div>
+    </div>
+    <div id="bt-demo-zone" class="hidden">
+      <div style="font-family:'VT323',monospace;font-size:15px;color:#aaa">Tapează cele 3 caracteristici relevante! <span id="demo-score">0/3</span></div>
+      <div class="demo-timer-wrap"><div id="demo-timer-fill" style="width:100%"></div></div>
+      <div id="demo-features"></div>
+    </div>
+  </div>
+
+  <div id="bt-result" class="hidden">
+    <div id="bt-result-icon">🎉</div>
+    <div id="bt-result-title" style="color:#FFD600"></div>
+    <div id="bt-result-details"></div>
+    <button class="bat-btn" style="margin-top:10px;border-color:#FFD600;color:#FFD600" onclick="closeBattle()">CONTINUĂ →</button>
+  </div>
+</div>
+
+<!-- HIRE SCREEN -->
+<div id="hire-screen" class="hidden">
+  <div id="hire-title">ANGAJARE</div>
+  <div id="hire-body"></div>
+  <div id="hire-actions"></div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════
@@ -362,8 +576,11 @@ const Save = {
 const G = {
   name:'', gender:'M', appearance:0, magazin:'flanco',
   nivel:1, xp:0, bani:1500, moral:100, persuasiune:3,
+  job:null,            // null | 'flanco' | 'atexl' | 'mage'
+  jobSince:0,          // in-game days since hired (cooldown 90 days to switch)
   npcConvinsi:{}, achievements:[], afaceri:[],
-  gameHour:8, gameMin:0,
+  gameHour:8, gameMin:0, gameDay:1,
+  sefCallsToday:0,     // sună șeful counter (resets daily)
   // runtime
   scene:null, dialogActive:false,
   keys:{up:false,down:false,left:false,right:false,a:false,b:false},
@@ -375,8 +592,9 @@ function saveGame(){
   Save.write({
     name:G.name,gender:G.gender,appearance:G.appearance,magazin:G.magazin,
     nivel:G.nivel,xp:G.xp,bani:G.bani,moral:G.moral,persuasiune:G.persuasiune,
+    job:G.job,jobSince:G.jobSince,sefCallsToday:G.sefCallsToday,
     npcConvinsi:G.npcConvinsi,achievements:G.achievements,afaceri:G.afaceri,
-    gameHour:G.gameHour,gameMin:G.gameMin
+    gameHour:G.gameHour,gameMin:G.gameMin,gameDay:G.gameDay
   });
 }
 function loadIntoG(d){ Object.assign(G,d); updateHUD(); }
@@ -388,6 +606,15 @@ function updateHUD(){
   $('hud-bani').textContent = numFmt(G.bani);
   $('moral-fill').style.width = G.moral+'%';
   $('hud-time').textContent = pad2(G.gameHour)+':'+pad2(G.gameMin);
+  const jb=$('hud-job');
+  if(jb){
+    const jCfg={flanco:{t:'FLC',c:'#E30613',b:'#300005'},atexl:{t:'ATX',c:'#0044cc',b:'#000530'},mage:{t:'MGE',c:'#ff6600',b:'#200800'}};
+    const j=G.job?jCfg[G.job]:null;
+    jb.textContent=j?j.t:'FĂRĂ';
+    jb.style.color=j?j.c:'#444';
+    jb.style.borderColor=j?j.c:'#333';
+    jb.style.background=j?j.b:'transparent';
+  }
 }
 function addBani(n){ G.bani+=n; updateHUD(); notify('+'+numFmt(n)+' RON 💰'); saveGame(); }
 function addXP(n){
@@ -1346,60 +1573,17 @@ class WorldScene extends Phaser.Scene {
     else if(this.nearBuilding) this.enterBuilding(this.nearBuilding);
   }
 
-  // ── NPC Dialog ───────────────────────────────────────────────
-  async talkToNPC(npc){
+  // ── NPC → Battle ─────────────────────────────────────────────
+  talkToNPC(npc){
     if(G.dialogActive) return;
     G.dialogActive=true;
     this.player.setVelocity(0,0);
-    const client=npc.data;
-
-    openDialog(client.name||client.nome, client.replica);
-
-    setTimeout(()=>{
-      showChoicesUI(getChoices(client), async choice=>{
-        closeChoicesUI();
-        setDialogText('⏳ Se procesează...');
-
-        const result=await callGroq(client,choice.text);
-        setDialogText(result.replica||'...');
-        showContinue(true);
-
-        const success=result.goodChoice||(result.effect==='convins')||(result.effect==='interesat');
-        const isFirstTime=!G.npcConvinsi[client.id];
-
-        setTimeout(()=>{
-          closeDialog();
-          if(success&&isFirstTime){
-            const r=client.reward||{bani:80,xp:20};
-            addBani(r.bani); addXP(r.xp); addMoral(+8);
-            notify(`✅ ${client.name} convins! +${r.bani} RON 🎉`);
-            if(!npc.isLeg) npc.interacted=true;
-            if(npc.exclaim) npc.exclaim.setVisible(false);
-            if(npc.nameTag) npc.nameTag.setVisible(false);
-            G.npcConvinsi[client.id]=true;
-            saveGame();
-          } else if(!success){
-            addMoral(-5);
-            notify('😕 '+client.name+' nu e convins. Încearcă altceva!');
-          } else {
-            notify('💬 '+client.name+' e deja clientul tău fidel!');
-          }
-        },1600);
-      });
-    },900);
+    startBattle(npc, this);
   }
 
   enterBuilding(bld){
-    const msgs={
-      flanco:`Intri în FLANCO. Bine ai venit, angajat ${G.name}! (Interioare — Phase 2)`,
-      atexl:'ATEXL — Concurența noastră. (Interioare — Phase 2)',
-      mage:'MagE — Imperiul digital. (Interioare — Phase 2)',
-      banca:'BANCĂ — Depozit și împrumuturi. (Phase 2)',
-      cafenea:'CAFENEA — +20 Moral dacă stai 5 minute. (Phase 2)',
-      casa:'ACASĂ — Odihna îți reface moralul. (Phase 2)',
-      default:'Clădire blocată momentan. (Phase 2)'
-    };
-    notify('🏢 '+(msgs[bld.id]||msgs.default));
+    if(G.dialogActive) return;
+    openHireScreen(bld);
   }
 
   // ── Minimap ──────────────────────────────────────────────────
@@ -1448,6 +1632,615 @@ class WorldScene extends Phaser.Scene {
       ctx.fillRect(this.player.x*sx-2,this.player.y*sy-2,4,4);
     }
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  BATTLE SYSTEM
+// ═══════════════════════════════════════════════════════════════
+
+const BATTLE = {
+  active:false, npcRef:null, worldScene:null,
+  client:null,
+  clientHP:0, clientHPMax:0,
+  playerMoral:100,
+  voucherUsed:false, sefCallsInBattle:0, argsUsed:0,
+  elegantSale:true,
+  demoTimer:null, demoSelected:[], demoCorrect:[],
+};
+
+const STORE_CFG = {
+  flanco:{label:'FLANCO',color:'#E30613',comision:0.02,salariu:3000},
+  atexl: {label:'ATEXL', color:'#0044cc',comision:0.025,salariu:3500},
+  mage:  {label:'MagE',  color:'#ff6600',comision:0.03, salariu:4500}
+};
+
+// Product features per objection type (for Demonstrează mini-game)
+const DEMO_FEATURES = {
+  pret:     {correct:['Garanție 2 ani','Service inclus','Retur 30 zile'],wrong:['Culori variate','Ambalaj premium','Expediere rapidă']},
+  calitate: {correct:['Certificare CE','Baterie 5000mAh','Carcasă metal'],wrong:['Disponibil online','Livrare gratuită','4 culori']},
+  comparatie:{correct:['Suport 24/7','Instalare gratuită','Preț blocat'],wrong:['Model nou 2024','App dedicată','Garanție extinsă']},
+  incredere:{correct:['Retur 30 zile','Service rapid','Garanție legală'],wrong:['Design slim','Ecran AMOLED','Stocare 256GB']},
+  urgenta:  {correct:['În stoc acum','Ridicare azi','Facturare rapidă'],wrong:['Livrare 24h','Online disponibil','Rezervare online']}
+};
+
+// Arguments per objection (for Argumentează sub-menu)
+const ARGS = {
+  pret:[
+    {text:'Calitatea justifică prețul — ROI pe termen lung.',  keyword:'calitate'},
+    {text:'Avem retur 30 zile fără justificări.',              keyword:'retur'},
+    {text:'Garanție 2 ani conform legislației europene.',      keyword:'garanție'},
+  ],
+  calitate:[
+    {text:'Produsul are certificare europeană CE obligatorie.',keyword:'certificare'},
+    {text:'Vă arăt recenziile verificate — 4.8/5 din 2000.',  keyword:'recenzii'},
+    {text:'Brandul e în top 3 fiabilitate conform testelor.',  keyword:'fiabilitate'},
+  ],
+  comparatie:[
+    {text:'La noi suportul post-vânzare e inclus în preț.',   keyword:'suport'},
+    {text:'Prețul online nu include instalarea și service.',   keyword:'instalare'},
+    {text:'Livrare gratuită plus instalare gratuită la noi.',  keyword:'livrare'},
+  ],
+  incredere:[
+    {text:'Returnul e gratuit în primele 30 de zile.',        keyword:'retur'},
+    {text:'Service-ul are timp de răspuns garantat 24h.',     keyword:'service'},
+    {text:'Contractul de garanție îl semnăm chiar acum.',     keyword:'contract'},
+  ],
+  urgenta:[
+    {text:'Produsul e în stoc, îl pregătim în 10 minute.',    keyword:'stoc'},
+    {text:'Facem factura acum și plecați imediat.',           keyword:'factura'},
+    {text:'Rezervare garantată — nimeni nu îl poate lua.',    keyword:'rezervare'},
+  ]
+};
+
+// ─── Draw sprites on canvas elements ────────────────────────────
+function drawClientSprite(canvasEl, client){
+  const ctx=canvasEl.getContext('2d');
+  ctx.clearRect(0,0,64,80);
+  const rig=client.rig||client.rigiditate||5;
+  const isLeg=client.legendary||false;
+
+  // Body color by rigiditate
+  let bodyHue=120; // green
+  if(rig>=8) bodyHue=0;       // red
+  else if(rig>=5) bodyHue=50; // yellow
+  if(isLeg) bodyHue=280;      // purple
+
+  const bodyCol=`hsl(${bodyHue},60%,35%)`;
+  const accentCol=`hsl(${bodyHue},80%,50%)`;
+
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.3)';
+  ctx.ellipse(32,76,20,6,0,0,Math.PI*2); ctx.fill();
+
+  // Shoes
+  ctx.fillStyle='#111';
+  ctx.fillRect(14,66,14,6); ctx.fillRect(36,66,14,6);
+
+  // Legs
+  ctx.fillStyle='#2a2a5a';
+  ctx.fillRect(14,52,14,16); ctx.fillRect(36,52,14,16);
+
+  // Body
+  ctx.fillStyle=bodyCol;
+  ctx.fillRect(12,30,40,24);
+  ctx.fillStyle=accentCol;
+  ctx.fillRect(12,30,40,6); // collar
+
+  // Arms
+  ctx.fillStyle=bodyCol;
+  ctx.fillRect(2,32,10,18); ctx.fillRect(52,32,10,18);
+  ctx.fillStyle='#FDBCB4';
+  ctx.fillRect(2,48,10,6); ctx.fillRect(52,48,10,6);
+
+  // Head
+  ctx.fillStyle='#FDBCB4';
+  ctx.fillRect(18,10,28,22);
+
+  // Hair (color by id hash)
+  const hairCols=['#3d2200','#cc9900','#111','#cc4400','#777','#442200'];
+  const hIdx=(client.id||'').split('').reduce((s,c)=>s+c.charCodeAt(0),0)%hairCols.length;
+  ctx.fillStyle=hairCols[hIdx];
+  ctx.fillRect(18,10,28,7);
+  if(client.persona==='analitic'){ ctx.fillStyle='rgba(200,230,255,0.5)'; ctx.fillRect(20,20,8,4); } // glasses
+
+  // Eyes — expression by rigiditate
+  ctx.fillStyle='#222';
+  ctx.fillRect(22,21,5,5); ctx.fillRect(37,21,5,5);
+  if(rig>=8){
+    // angry eyebrows
+    ctx.fillStyle=hairCols[hIdx];
+    ctx.fillRect(20,18,7,3); ctx.fillRect(37,18,7,3);
+  } else if(rig<=3){
+    // happy arc mouth
+    ctx.fillStyle='#c47';
+    ctx.beginPath(); ctx.arc(32,29,5,0,Math.PI); ctx.fill();
+  }
+  // Mouth neutral/frown
+  ctx.fillStyle='#c47';
+  if(rig>=6) ctx.fillRect(26,29,12,3);
+  else ctx.fillRect(26,28,12,2);
+
+  // Legendary badge
+  if(isLeg){
+    ctx.fillStyle='#FFD600';
+    ctx.beginPath(); ctx.moveTo(32,2); ctx.lineTo(35,8); ctx.lineTo(42,8);
+    ctx.lineTo(36,12); ctx.lineTo(38,18); ctx.lineTo(32,14);
+    ctx.lineTo(26,18); ctx.lineTo(28,12); ctx.lineTo(22,8);
+    ctx.lineTo(29,8); ctx.closePath(); ctx.fill();
+  }
+}
+
+function drawPlayerBattleSprite(canvasEl){
+  const app=APPEARANCES[G.appearance]||APPEARANCES[0];
+  const ctx=canvasEl.getContext('2d');
+  ctx.clearRect(0,0,40,52);
+  const skin=app.skinTone||'#FDBCB4';
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.ellipse(20,50,14,4,0,0,Math.PI*2); ctx.fill();
+  // Shoes
+  ctx.fillStyle='#111'; ctx.fillRect(8,44,8,4); ctx.fillRect(24,44,8,4);
+  // Legs
+  ctx.fillStyle='#1a1a4a'; ctx.fillRect(8,33,8,12); ctx.fillRect(24,33,8,12);
+  // Body
+  ctx.fillStyle=app.shirt; ctx.fillRect(7,20,26,14);
+  ctx.fillStyle='#FFD600'; ctx.fillRect(9,22,10,4); // badge
+  // Arms
+  ctx.fillStyle=app.shirt; ctx.fillRect(2,22,5,12); ctx.fillRect(33,22,5,12);
+  ctx.fillStyle=skin; ctx.fillRect(2,33,5,4); ctx.fillRect(33,33,5,4);
+  // Head
+  ctx.fillStyle=skin; ctx.fillRect(12,6,16,14);
+  // Hair
+  ctx.fillStyle=app.hair; ctx.fillRect(12,6,16,5);
+  if(app.gender==='F'){ ctx.fillRect(12,6,4,14); ctx.fillRect(24,6,4,14); }
+  // Eyes
+  ctx.fillStyle='#222'; ctx.fillRect(14,13,4,4); ctx.fillRect(22,13,4,4);
+}
+
+// ─── Start battle ────────────────────────────────────────────────
+function startBattle(npcRef, worldScene){
+  const client=npcRef.data;
+  BATTLE.active=true;
+  BATTLE.npcRef=npcRef;
+  BATTLE.worldScene=worldScene;
+  BATTLE.client=client;
+  BATTLE.clientHP=client.hp||client.hpMax||(50+(client.rig||5)*15);
+  BATTLE.clientHPMax=BATTLE.clientHP;
+  BATTLE.playerMoral=G.moral;
+  BATTLE.voucherUsed=false;
+  BATTLE.sefCallsInBattle=0;
+  BATTLE.argsUsed=0;
+  BATTLE.elegantSale=true;
+
+  // Hide controls
+  $('controls').style.visibility='hidden';
+  $('minimap').style.visibility='hidden';
+
+  // Fill UI
+  $('bc-name').textContent=client.name||'Client';
+  $('bc-type').textContent=(client.persona||'?')+' · '+(client.obiectieType||'preț');
+  $('bp-name').textContent=G.name;
+  $('bp-niv').textContent='Niv.'+G.nivel+' · Persuasiune '+G.persuasiune+'/10';
+  $('battle-voucher-info').textContent='Voucher: NU  |  Sună Șeful: '+(3-G.sefCallsToday)+'/3 rămase';
+
+  drawClientSprite($('bc-sprite'), client);
+  drawPlayerBattleSprite($('bp-sprite'));
+
+  updateBattleHP(); updateBattleMoral();
+
+  typeText('bc-dialog-txt', client.replica||'...', 30, null);
+
+  $('bt-result').classList.add('hidden');
+  closeBattleSubmenu();
+
+  $('battle-screen').classList.remove('hidden');
+  setBattlePrompt('Ce faci?');
+  showBattleActions(true);
+}
+
+function updateBattleHP(){
+  const pct=Math.max(0,BATTLE.clientHP/BATTLE.clientHPMax*100);
+  const fill=$('bc-hp-fill');
+  fill.style.width=pct+'%';
+  // Color transition
+  if(pct>50) fill.style.background='linear-gradient(90deg,#228800,#44ff00)';
+  else if(pct>20) fill.style.background='linear-gradient(90deg,#886600,#ffcc00)';
+  else fill.style.background='linear-gradient(90deg,#880000,#ff2200)';
+  $('bc-hp-txt').textContent=Math.max(0,BATTLE.clientHP)+'/'+BATTLE.clientHPMax;
+}
+
+function updateBattleMoral(){
+  $('bp-moral-fill').style.width=Math.max(0,BATTLE.playerMoral)+'%';
+}
+
+function setBattlePrompt(txt){ $('bt-prompt').textContent=txt; }
+function showBattleActions(on){ $('bt-actions').style.display=on?'grid':'none'; }
+
+function closeBattleSubmenu(){
+  $('bt-sub-menu').innerHTML='';
+  $('bt-sub-menu').classList.add('hidden');
+  $('bt-voucher-zone').classList.add('hidden');
+  $('bt-demo-zone').classList.add('hidden');
+  showBattleActions(true);
+  setBattlePrompt('Ce faci?');
+}
+
+// ─── Actions ─────────────────────────────────────────────────────
+function bAction(type){
+  if(!BATTLE.active) return;
+  showBattleActions(false);
+  if(type==='argumenteaza') bArgMenu();
+  else if(type==='demonstreaza') bDemoGame();
+  else if(type==='voucher') bVoucherMenu();
+  else if(type==='suna_seful') bSunaSeful();
+  else if(type==='fugi') bFugi();
+}
+
+// Argumentează → sub-menu cu 3 argumente + Groq call
+function bArgMenu(){
+  const client=BATTLE.client;
+  const args=ARGS[client.obiectieType]||ARGS.pret;
+  const sub=$('bt-sub-menu');
+  sub.innerHTML='';
+  setBattlePrompt('Alege argumentul:');
+  showBattleActions(false);
+
+  args.forEach((a,i)=>{
+    const btn=document.createElement('div');
+    btn.className='bsub-btn';
+    btn.textContent=['A','B','C'][i]+'. '+a.text;
+    btn.onclick=()=>{ sub.innerHTML=''; sub.classList.add('hidden'); bDoArgument(a); };
+    sub.appendChild(btn);
+  });
+
+  const back=document.createElement('div');
+  back.className='bsub-btn';
+  back.textContent='← Înapoi';
+  back.style.color='#777'; back.style.borderColor='#333';
+  back.onclick=closeBattleSubmenu;
+  sub.appendChild(back);
+
+  sub.classList.remove('hidden');
+}
+
+async function bDoArgument(arg){
+  BATTLE.argsUsed++;
+  setBattlePrompt('⏳ Clientul procesează...');
+
+  const client=BATTLE.client;
+  const result=await callGroq(client, arg.text);
+  const dmg=calcDamage(result, client, arg);
+  applyDamageToClient(dmg, result.replica||'...');
+}
+
+function calcDamage(result, client, arg){
+  let base=8+G.persuasiune*2+rnd(0,8);
+  if(result.goodChoice) base+=10;
+  if(result.effect==='convins') base+=20;
+  if(result.effect==='furios') base=Math.max(2,base-10);
+
+  // Legendary weakness
+  if(client.legendary&&client.slabiciune){
+    const kw=client.slabiciune;
+    const txt=(arg.text+' '+arg.keyword).toLowerCase();
+    if(kw.some(k=>txt.includes(k.toLowerCase()))) base*=3;
+  }
+  return Math.round(base);
+}
+
+// Demonstrează → tap mini-game
+function bDemoGame(){
+  const client=BATTLE.client;
+  const feats=DEMO_FEATURES[client.obiectieType]||DEMO_FEATURES.pret;
+  BATTLE.demoSelected=[];
+  BATTLE.demoCorrect=feats.correct;
+
+  setBattlePrompt('Tapează cele 3 corecte! (5s)');
+  showBattleActions(false);
+
+  // Build shuffled feature list (3 correct + 3 wrong)
+  const all=[...feats.correct.map(f=>({t:f,ok:true})),...feats.wrong.map(f=>({t:f,ok:false}))];
+  all.sort(()=>Math.random()-0.5);
+
+  const dz=$('bt-demo-zone');
+  const df=$('demo-features');
+  df.innerHTML='';
+  $('demo-score').textContent='0/3';
+  $('demo-timer-fill').style.width='100%';
+  dz.classList.remove('hidden');
+
+  all.forEach(f=>{
+    const btn=document.createElement('div');
+    btn.className='demo-feat-btn';
+    btn.textContent=f.t;
+    btn.onclick=()=>{
+      if(btn.classList.contains('tapped')||btn.classList.contains('wrong')) return;
+      if(f.ok){ btn.classList.add('tapped'); BATTLE.demoSelected.push(f.t); }
+      else{ btn.classList.add('wrong'); BATTLE.demoSelected.push(null); }
+      $('demo-score').textContent=BATTLE.demoSelected.filter(x=>x).length+'/3';
+      if(BATTLE.demoSelected.length>=3) finishDemo();
+    };
+    df.appendChild(btn);
+  });
+
+  // Timer
+  let timeLeft=5.0;
+  clearInterval(BATTLE.demoTimer);
+  BATTLE.demoTimer=setInterval(()=>{
+    timeLeft-=0.1;
+    $('demo-timer-fill').style.width=Math.max(0,timeLeft/5*100)+'%';
+    if(timeLeft<=0){ clearInterval(BATTLE.demoTimer); finishDemo(); }
+  },100);
+}
+
+function finishDemo(){
+  clearInterval(BATTLE.demoTimer);
+  const correct=BATTLE.demoSelected.filter(x=>x).length;
+  const dmg=correct===3?30:correct===2?15:5;
+  const client=BATTLE.client;
+  const replica=correct===3?'Wow, impresionant! Nu știam că...'
+    :correct===2?'Hmm, câteva puncte bune...'
+    :'Asta nu e relevant pentru mine.';
+  $('bt-demo-zone').classList.add('hidden');
+  applyDamageToClient(dmg, replica);
+}
+
+// Voucher
+function bVoucherMenu(){
+  BATTLE.elegantSale=false;
+  showBattleActions(false);
+  $('bt-voucher-zone').classList.remove('hidden');
+  setBattlePrompt('Aplică reducere (din comisionul tău):');
+  updateVoucherPreview();
+}
+
+function updateVoucherPreview(){
+  const pct=parseInt($('voucher-slider').value);
+  const client=BATTLE.client;
+  const prodVal=(client.reward?.bani||200)/0.025; // approximate product value
+  const discount=Math.round(prodVal*pct/100);
+  $('voucher-preview').textContent=pct+'% reducere → client economisește ~'+numFmt(discount)+' RON (tu pierzi '+numFmt(Math.round(discount*0.4))+' RON comision)';
+}
+
+function confirmVoucher(){
+  const pct=parseInt($('voucher-slider').value);
+  const dmg=Math.round(pct/20*20+10); // 5%→15, 10%→20, 15%→25, 20%→30
+  const comisionPierdut=Math.round((BATTLE.client.reward?.bani||200)*(pct/100)*0.5);
+  BATTLE.voucherUsed=true;
+  $('battle-voucher-info').textContent='Voucher: '+pct+'% aplicat  |  -'+comisionPierdut+' RON din comision';
+  $('bt-voucher-zone').classList.add('hidden');
+  applyDamageToClient(dmg, 'Oh... cu reducere, poate mă gândesc...');
+  // Deduct later on win — stored as BATTLE.voucherPierdut
+  BATTLE.voucherPierdut=(BATTLE.voucherPierdut||0)+comisionPierdut;
+}
+
+// Sună Șeful
+function bSunaSeful(){
+  if(G.sefCallsToday>=3){
+    notify('📞 Șeful e ocupat — ai sunat de 3 ori azi!');
+    showBattleActions(true); return;
+  }
+  BATTLE.elegantSale=false; BATTLE.sefCallsInBattle++;
+  G.sefCallsToday++;
+  setBattlePrompt('📞 Suni la șef...');
+  const moralCost=BATTLE.sefCallsInBattle>1?20:10;
+  BATTLE.playerMoral=Math.max(0,BATTLE.playerMoral-moralCost);
+  G.moral=BATTLE.playerMoral; updateBattleMoral(); updateHUD();
+
+  setTimeout(()=>{
+    applyDamageToClient(45, 'Bine... dacă șeful zice...');
+    $('battle-voucher-info').textContent='Voucher: '+(BATTLE.voucherUsed?'DA':'NU')+'  |  Sună Șeful: '+(3-G.sefCallsToday)+'/3 rămase';
+  },1200);
+}
+
+// Fugi
+function bFugi(){
+  const success=Math.random()<0.7;
+  if(success){
+    BATTLE.active=false;
+    notify('🏃 Ai fugit! Clientul te-a lăsat.');
+    closeBattleClean();
+  } else {
+    BATTLE.playerMoral=Math.max(0,BATTLE.playerMoral-5);
+    G.moral=BATTLE.playerMoral; updateBattleMoral(); updateHUD();
+    applyDamageToClient(0,'Unde te duci?! Stai!');
+    notify('😬 Clientul te-a prins! -5 Moral.');
+  }
+}
+
+// ─── Apply damage ────────────────────────────────────────────────
+function applyDamageToClient(dmg, reply){
+  BATTLE.clientHP=Math.max(0,BATTLE.clientHP-dmg);
+  updateBattleHP();
+
+  // Shake sprite
+  const spr=$('bc-sprite'); spr.classList.remove('shake');
+  void spr.offsetWidth; spr.classList.add('shake');
+
+  // Show reply
+  typeText('bc-dialog-txt', reply||'...', 30, null);
+  setBattlePrompt(dmg>0?`-${dmg} rezistență!`:'Nicio schimbare.');
+
+  setTimeout(()=>{
+    if(BATTLE.clientHP<=0) battleWin();
+    else if(BATTLE.playerMoral<=0) battleLose('moral');
+    else{ showBattleActions(true); setBattlePrompt('Ce faci?'); }
+  },1400);
+}
+
+// ─── Win / Lose ──────────────────────────────────────────────────
+function battleWin(){
+  BATTLE.active=false;
+  const client=BATTLE.client;
+  const r=client.reward||{bani:100,xp:30};
+  let bani=r.bani;
+  let xp=r.xp;
+
+  // Bonus elegant sale
+  let bonusMsg='';
+  if(BATTLE.elegantSale&&BATTLE.argsUsed<=2&&!BATTLE.voucherUsed){
+    bani=Math.round(bani*1.5); xp=Math.round(xp*1.5);
+    bonusMsg='\n🌟 VÂNZARE ELEGANTĂ! +50% bonus';
+  }
+
+  // Voucher cost
+  if(BATTLE.voucherPierdut) bani=Math.max(0,bani-BATTLE.voucherPierdut);
+
+  // Job requirement
+  let earnedBani=0;
+  if(G.job){
+    earnedBani=bani;
+    addBani(earnedBani); addXP(xp); addMoral(+10);
+  } else {
+    addXP(Math.round(xp*0.5)); addMoral(+3);
+    bonusMsg+='\n⚠️ Fără job, comision = 0 RON!';
+  }
+
+  // Mark NPC
+  const npc=BATTLE.npcRef;
+  G.npcConvinsi[client.id]=true;
+  if(!npc.isLeg){ npc.interacted=true; if(npc.exclaim) npc.exclaim.setVisible(false); if(npc.nameTag) npc.nameTag.setVisible(false); }
+  saveGame();
+
+  // Result screen
+  $('bt-result-icon').textContent=client.legendary?'🏆':'🎉';
+  $('bt-result-title').textContent='CLIENT CONVINS!';
+  $('bt-result-title').style.color='#FFD600';
+  $('bt-result-details').textContent=(earnedBani?'+'+numFmt(earnedBani)+' RON\n':'')+'+'+xp+' XP\n+10 Moral'+bonusMsg+(client.legendary?'\n'+client.reward?.achievement:'');
+  $('bt-result').classList.remove('hidden');
+}
+
+function battleLose(reason){
+  BATTLE.active=false;
+  $('bt-result-icon').textContent='😵';
+  $('bt-result-title').textContent='MORAL ZERO!';
+  $('bt-result-title').style.color='#E30613';
+  $('bt-result-details').textContent='Ești prea epuizat să mai negociezi.\nMergi la Cafenea să îți refaci moralul.';
+  $('bt-result').classList.remove('hidden');
+  addMoral(-10);
+}
+
+function closeBattle(){
+  closeBattleClean();
+}
+
+function closeBattleClean(){
+  $('battle-screen').classList.add('hidden');
+  $('controls').style.visibility='visible';
+  $('minimap').style.visibility='visible';
+  G.dialogActive=false;
+  BATTLE.voucherPierdut=0;
+  closeBattleSubmenu();
+}
+
+// ─── Hire System ─────────────────────────────────────────────────
+const STORE_HIRE = {
+  flanco:{label:'FLANCO', color:'#E30613', salariu:3000, comision:'2%', icon:'🔴', minNiv:1,
+    desc:'Cel mai mare retailer de electronice din România.\nSalariu 3.000 RON/lună + 2% comision.\nClienți medii. Perfect pentru început.'},
+  atexl:{label:'ATEXL',  color:'#0044cc', salariu:3500, comision:'2.5%', icon:'🔵', minNiv:5,
+    desc:'Jucător major în electronice și electrocasnice.\nSalariu 3.500 RON/lună + 2.5% comision.\nClienți mai dificili. Nivel 5+ recomandat.'},
+  mage:{label:'MagE',   color:'#ff6600', salariu:4500, comision:'3%', icon:'🟠', minNiv:10,
+    desc:'Colosul digital. Totul, de la telefoane la electrocasnice.\nSalariu 4.500 RON/lună + 3% comision.\nClienți imposibili. Nivel 10+ recomandat.'},
+  banca:{label:'BANCĂ',icon:'🏦', special:true,
+    desc:'Depune bani pentru dobândă 0.5%/lună.\nIa împrumut de până la 5x salariu lunar.\n(Funcționalitate completă — Phase 3)'},
+  cafenea:{label:'CAFENEA',icon:'☕', special:true,
+    desc:'Stai 2 minute și câștigi +25 Moral.\n(Click "Intră" pentru recuperare rapidă)'},
+  casa:{label:'ACASĂ',icon:'🏠', special:true,
+    desc:'Casa ta. Odihna completă refacce moralul la 100%.\n(Funcționalitate completă — Phase 3)'},
+};
+
+function openHireScreen(bld){
+  const cfg=STORE_HIRE[bld.id];
+  if(!cfg){ notify('Clădire momentan inaccesibilă.'); return; }
+
+  $('hire-title').textContent=cfg.icon+' '+cfg.label;
+  $('hire-title').style.color=cfg.color||'#FFD600';
+
+  // Special buildings (cafenea, bancă, casă)
+  if(cfg.special){
+    $('hire-body').innerHTML=cfg.desc.replace(/\n/g,'<br>');
+    const acts=$('hire-actions'); acts.innerHTML='';
+
+    if(bld.id==='cafenea'){
+      acts.innerHTML=`
+        <button class="hire-btn" onclick="doSpecialBuilding('cafenea')">☕ Bea o cafea (+25 Moral)</button>
+        <button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>
+      `;
+    } else {
+      acts.innerHTML=`<button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>`;
+    }
+    $('hire-screen').classList.remove('hidden');
+    return;
+  }
+
+  // Store buildings
+  const alreadyHere=G.job===bld.id;
+  const employed=!!G.job;
+  const levelOk=G.nivel>=cfg.minNiv;
+  const acts=$('hire-actions'); acts.innerHTML='';
+
+  let body=cfg.desc.replace(/\n/g,'<br>');
+  if(alreadyHere){
+    body+=`<br><br><span style="color:#FFD600">✅ Ești deja angajat aici!</span>`;
+  } else if(G.job){
+    const curCfg=STORE_HIRE[G.job]||{};
+    body+=`<br><br><span style="color:#ff8888">⚠️ Ești angajat la ${curCfg.label||G.job}.<br>Trebuie să renunți mai întâi.</span>`;
+  } else if(!levelOk){
+    body+=`<br><br><span style="color:#ff8888">⚠️ Nivel ${cfg.minNiv} necesar (ai ${G.nivel}).</span>`;
+  }
+  $('hire-body').innerHTML=body;
+
+  if(alreadyHere){
+    acts.innerHTML=`
+      <button class="hire-btn-quit" onclick="doQuitJob()">🚪 Renunță la job</button>
+      <button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>
+    `;
+  } else if(employed){
+    acts.innerHTML=`
+      <button class="hire-btn" onclick="doSwitchJob('${bld.id}')" ${levelOk?'':'disabled style="opacity:0.4"'}>🔄 Renunță + Angajează-te</button>
+      <button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>
+    `;
+  } else {
+    acts.innerHTML=`
+      <button class="hire-btn" onclick="doHire('${bld.id}')" ${levelOk?'':'disabled style="opacity:0.4"'}>✅ Angajează-mă!</button>
+      <button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>
+    `;
+  }
+  $('hire-screen').classList.remove('hidden');
+}
+
+function doHire(magazin){
+  const cfg=STORE_HIRE[magazin];
+  G.job=magazin; G.jobSince=G.gameDay||1;
+  updateHUD(); saveGame();
+  closeHireScreen();
+  notify('🎉 Felicitări! Angajat la '+cfg.label+'! Salariu: '+numFmt(cfg.salariu)+' RON/lună');
+}
+
+function doQuitJob(){
+  const old=STORE_HIRE[G.job]||{};
+  G.job=null; G.jobSince=0;
+  updateHUD(); saveGame();
+  closeHireScreen();
+  notify('👋 Ai renunțat la job-ul de la '+(old.label||'?')+'. Fii pe fază!');
+}
+
+function doSwitchJob(newMagazin){
+  const old=STORE_HIRE[G.job]||{};
+  doQuitJob();
+  setTimeout(()=>doHire(newMagazin),200);
+}
+
+function doSpecialBuilding(id){
+  if(id==='cafenea'){
+    addMoral(25);
+    notify('☕ Cafea băută! +25 Moral');
+    closeHireScreen();
+  }
+}
+
+function closeHireScreen(){
+  $('hire-screen').classList.add('hidden');
+  G.dialogActive=false;
 }
 
 // ─── Dialog UI ───────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 {
   "project": "Retail Wars: România",
-  "checkpoint": "phase1-v1",
-  "date": "2026-05-24",
+  "checkpoint": "phase2-v1",
+  "date": "2026-05-25",
   "file": "index.html",
   "engine": "Phaser 3.70 CDN",
   "groq_model": "llama-3.3-70b-versatile",
@@ -16,45 +16,56 @@
     "dialog_system": "✅ GATA — Typing effect, choices A/B/C, Groq API cu fallback",
     "groq_api": "✅ GATA — POST la Groq cu timeout 4.5s, fallback per personalitate",
     "save_system": "✅ GATA — localStorage, autosave 60s, continuă/joc nou",
-    "hud": "✅ GATA — Nume, nivel, bani, moral bar, ora",
+    "hud": "✅ GATA — Nume, nivel, bani, moral bar, ora + badge job",
     "minimap": "✅ GATA — 66x50px colț dreapta sus, clădiri colorate, player dot pulsant",
     "collision": "✅ GATA — Clădiri + apă = collidable, player nu trece prin ele",
-    "notifications": "✅ GATA — Toast notifications cu auto-dismiss 2.4s"
+    "notifications": "✅ GATA — Toast notifications cu auto-dismiss 2.4s",
+    "battle_system": "✅ GATA — Turn-based HTML overlay, HP bars Pokemon-style, 5 acțiuni (Argumentează/Demonstrează/Voucher/Sună Șeful/Fugi), Groq AI răspuns cu fallback, calcul daune, weakness matching per legendar, bonus vânzare elegantă",
+    "demo_minigame": "✅ GATA — Mini-joc Demonstrează: alegi 3 caracteristici corecte din 6 (produse specifice per magazin), timer 8s",
+    "voucher_system": "✅ GATA — Slider voucher 5-30% reducere, preview preț în timp real, penalizare moral dacă pierzi",
+    "employment_system": "✅ GATA — Angajare la Flanco/Atexl/MagE, schimbare job cu cooldown 30 zile in-game, demisie, salariu +500 lei/zi la job activ, badge HUD colorat per magazin",
+    "legendary_npcs": "✅ GATA — 5 legendari cu weaknesses unice: Vasile (tech vechi), Cornelia (fiul), Gigel (co-expert), Coste (B2B), Elena (empatie+soluție)"
   },
 
-  "phase2_todo": [
-    "Battle system turn-based (HP client, Argumentează/Demonstrează/Voucher/Sună Șeful/Fugi)",
-    "Shop interior scenes (Flanco/Atexl/MagE cu rafturi și NPC-uri interne)",
-    "Economy: bancă (dobândă, împrumuturi), afaceri de cumpărat (10 tipuri)",
-    "Client stealing mechanic (interceptare clienți la intrarea în magazin competitor)",
-    "Chirie vs casă proprie (costuri lunare)",
-    "Angajare la magazin + schimbarea jobului (cooldown 3 luni in-game)",
-    "Full battle scene cu Pokémon-style HP bars pentru clienți legendari",
-    "Informații reale retail: retururi 30/45 zile, garanție legală 2 ani, etc.",
-    "Shop interior cu NPC manager pentru angajare",
-    "Passive income: venit per minut din afacerile deținute"
+  "phase3_todo": [
+    "Shop interior scenes (Flanco/Atexl/MagE cu rafturi, produse expuse, NPC-uri interne)",
+    "Economy: bancă (dobândă zilnică, împrumuturi cu scadență), afaceri de cumpărat (10 tipuri: cafenea, service auto, etc.)",
+    "Client stealing mechanic (interceptare clienți la intrarea în magazin competitor cu proximity check)",
+    "Chirie vs casă proprie (costuri lunare deductibile din bani la fiecare zi in-game)",
+    "Passive income: venit automat per minut in-game din afacerile deținute",
+    "RETAIL_FACTS object: info reale per magazin injectat în Groq system prompt",
+    "Informații reale retail: Flanco 45 zile retur fizic, garanție legală 2 ani UE, etc.",
+    "Leaderboard local (top 5 vânzători, stocat în localStorage)",
+    "Achievements UI (ecran dedicat cu lista realizărilor deblocate)"
   ],
 
   "tech_notes": {
-    "groq_key": "PUNE_CHEIA_GROQ_AICI — vezi mesajul din chat",
+    "groq_key": "PUNE_CHEIA_GROQ_AICI — nu commit în git! Inserează manual după clone.",
+    "battle_architecture": "HTML overlay (#battle-screen), nu Phaser Scene. BATTLE obiect global cu tot state-ul. startBattle(npcRef, worldScene) pornește din talkToNPC().",
+    "hire_architecture": "HTML overlay (#hire-screen). openHireScreen(bld) pornit din enterBuilding(). Job stocat în G.job + G.jobSince (gameDay).",
+    "damage_formula": "base=15+G.persuasiune*3, weakness 3x, elegantSale bonus +50% la win dacă: fără voucher, ≤2 args, fără sefCall",
+    "demo_products": "STORE_CFG[magazin].products = array de {name,features:[{t,ok}]}. Client alege random 1 produs, jucătorul selectează 3 features corecte din 6.",
+    "voucher_range": "5-30% slider. Scade clientHP cu % din hpMax. Costă G.bani * pct/100. Dacă nu ai bani = blocat.",
     "known_issues": [
-      "Texturile NPC se generează o dată la spawn — nu animat (1 frame static)",
-      "Clădirile 'entrada' sunt approximate — nu pixel-perfect aliniate cu ușa",
-      "Groq latency poate fi 1-2s pe rețele slabe — există fallback hardcodat"
+      "Texturile NPC se generează o dată la spawn — 1 frame static",
+      "Entry zone clădiri approximate — nu pixel-perfect la ușă",
+      "Groq latency 1-2s pe rețele slabe — fallback hardcodat per personalitate",
+      "Salariu job aplicat manual din hire screen — nu cronometrat automat încă"
     ],
-    "resume_from": "Adaugă BattleScene ca nouă clasă Phaser.Scene și leagă din talkToNPC() după dialog inițial",
+    "resume_from": "Phase 3: adaugă ShopInteriorScene ca Phaser.Scene nouă, pornită din enterBuilding() când jobul jucătorului = magazinul respectiv",
     "player_sprite_frames": "16x24px, 4 cols x 4 rows = 64x96 spritesheet. Row 0=walk_d, 1=walk_u, 2=walk_l, 3=walk_r",
-    "map_coords": "TILE=16px. Mall: x41-58,y10-45. Centru: x10-25,y5-25. Rezidential: x5-20,y35-55. Industrial: x55-75,y25-55"
+    "map_coords": "TILE=16px. Mall: x41-58,y10-45. Centru: x10-25,y5-25. Rezidential: x5-20,y35-55. Industrial: x55-75,y25-55",
+    "file_lines": "~2291 linii la checkpoint phase2-v1"
   },
 
   "retail_info_todo": {
-    "note": "Utilizatorul vrea informații reale din T&C-urile magazinelor",
+    "note": "Utilizatorul vrea informații reale din T&C-urile magazinelor pentru ca angajații reali să poată învăța din joc",
     "flanco_real": {
       "retur": "45 zile calendaristice pentru produse cumpărate fizic din magazin",
       "garantie_legala": "2 ani conform legii UE",
       "accent": "Client-centrism, calitate servicii",
       "nota_implementare": "Adaugă în CHOICES_MAP și în prompt-ul Groq ca 'context retail real'"
     },
-    "implementare_recomandata": "Creează obiect RETAIL_FACTS cu info per magazin, injectat în promptul Groq ca system context"
+    "implementare_recomandata": "Creează obiect RETAIL_FACTS cu info per magazin, injectat în promptul Groq ca system context. Structură: RETAIL_FACTS.flanco = {retur:'45 zile', garantie:'2 ani', ...}"
   }
 }
