@@ -1193,7 +1193,7 @@ function startWorld(){
     parent:'phaser-container',
     physics:{default:'arcade',arcade:{gravity:{y:0},debug:false}},
     scale:{mode:Phaser.Scale.RESIZE,autoCenter:Phaser.Scale.CENTER_BOTH},
-    scene:[WorldScene]
+    scene:[WorldScene, ShopInteriorScene]
   });
 }
 
@@ -1752,7 +1752,14 @@ class WorldScene extends Phaser.Scene {
 
   enterBuilding(bld){
     if(G.dialogActive) return;
-    openHireScreen(bld);
+    if(bld.interior){
+      G.dialogActive=true;
+      $('minimap').style.visibility='hidden';
+      this.scene.pause();
+      this.scene.launch('ShopInterior',{bld});
+    } else {
+      openHireScreen(bld);
+    }
   }
 
   // ── Minimap ──────────────────────────────────────────────────
@@ -1800,6 +1807,217 @@ class WorldScene extends Phaser.Scene {
       ctx.fillStyle='#ff4444';
       ctx.fillRect(this.player.x*sx-2,this.player.y*sy-2,4,4);
     }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SHOP INTERIOR SCENE
+// ═══════════════════════════════════════════════════════════════
+class ShopInteriorScene extends Phaser.Scene {
+  constructor(){ super({key:'ShopInterior'}); }
+
+  init(data){ this.bldData=data.bld; }
+
+  create(){
+    const bld=this.bldData;
+    const T=16, IW=40, IH=26;
+    const wW=IW*T, wH=IH*T; // 640×416
+    this.drawInterior(bld,wW,wH,T,IW,IH);
+    this.physics.world.setBounds(0,0,wW,wH);
+    this.walls=this.physics.add.staticGroup();
+    this.buildWalls(wW,wH,T,IW,IH);
+    const spawnX=IW/2*T, spawnY=(IH-4)*T;
+    this.player=this.physics.add.sprite(spawnX,spawnY,'player',0);
+    this.player.setSize(10,12).setOffset(3,12).setDepth(5).setCollideWorldBounds(true).setMaxVelocity(120,120);
+    this.physics.add.collider(this.player,this.walls);
+    this.intNPCs=[];
+    this.spawnNPCs(bld,T,IW,IH);
+    this.cameras.main.setBounds(0,0,wW,wH);
+    this.cameras.main.startFollow(this.player,true,0.1,0.1);
+    const CW=this.scale.width,CH=this.scale.height;
+    this.promptTxt=this.add.text(8,CH-8,'',{
+      fontFamily:"'Press Start 2P',monospace",fontSize:'6px',color:'#FFD600',
+      backgroundColor:'#000000dd',padding:{x:6,y:4}
+    }).setDepth(20).setScrollFactor(0).setOrigin(0,1).setVisible(false);
+    this.add.text(CW/2,4,'[ '+bld.label+' — INTERIOR ]',{
+      fontFamily:"'Press Start 2P',monospace",fontSize:'6px',
+      color:bld.color,backgroundColor:'#000000cc',padding:{x:6,y:4}
+    }).setDepth(20).setScrollFactor(0).setOrigin(0.5,0);
+    this.nearNPC=null; this.nearMgr=false; this.nearExit=false;
+    G.scene=this; G.dialogActive=false;
+  }
+
+  drawInterior(bld,wW,wH,T,IW,IH){
+    const g=this.make.graphics({x:0,y:0,add:false});
+    const brandHex=bld.color||'#333333';
+    const brandCol=parseInt(brandHex.replace('#',''),16);
+    // Floor
+    g.fillStyle(0x181828,1); g.fillRect(0,0,wW,wH);
+    g.lineStyle(1,0x252540,0.5);
+    for(let x=0;x<IW;x++) g.lineBetween(x*T,0,x*T,wH);
+    for(let y=0;y<IH;y++) g.lineBetween(0,y*T,wW,y*T);
+    // Walls
+    g.fillStyle(0x1e1e38,1);
+    g.fillRect(0,0,wW,2*T); g.fillRect(0,0,T,wH); g.fillRect(wW-T,0,T,wH);
+    // Brand stripe
+    g.fillStyle(brandCol,0.85); g.fillRect(0,0,wW,5);
+    // Windows
+    for(let wx=2;wx<IW-2;wx+=5){
+      g.fillStyle(0x4488cc,0.18); g.fillRect(wx*T+2,4,3*T-4,T-6);
+      g.fillStyle(0xaaddff,0.1); g.fillRect(wx*T+2,4,3*T-4,3);
+    }
+    // Shelves (3 rows)
+    [5,10,15].forEach(sy=>{
+      g.fillStyle(0x4a2e0a,1);
+      g.fillRect(T+2,sy*T,(IW-4)*T,3);
+      g.fillRect(T+2,(sy+1)*T-4,(IW-4)*T,4);
+      for(let dx=0;dx<IW-4;dx+=4){ g.fillStyle(0x3a1e00,1); g.fillRect((T+2)+dx*T,sy*T,2,T); }
+      const pCols=[0xE30613,0x0044cc,0xff6600,0x009900,0xaaaaaa,0xffcc00,0x660099,0x00aacc];
+      for(let px=T+4;px<(IW-3)*T;px+=T){
+        const pc=pCols[Math.floor(px/T)%pCols.length];
+        g.fillStyle(pc,0.8); g.fillRect(px,sy*T-T+4,T-4,T-4);
+        g.fillStyle(0xffffff,0.15); g.fillRect(px,sy*T-T+4,T-4,3);
+      }
+    });
+    // Counter
+    g.fillStyle(0x3a2510,1); g.fillRect(8*T,2*T+4,(IW-18)*T,T);
+    g.fillStyle(0x5a3a20,1); g.fillRect(8*T,2*T+4,(IW-18)*T,3);
+    const crX=IW/2*T-T;
+    g.fillStyle(0x222222,1); g.fillRect(crX,T+4,T+4,T-4);
+    g.fillStyle(0x3388cc,0.8); g.fillRect(crX+2,T+6,T,T-8);
+    // Exit door
+    const dX=(IW/2-3)*T, dY=(IH-2)*T;
+    g.fillStyle(0x1a0e00,1); g.fillRect(dX,dY,6*T,2*T);
+    g.fillStyle(0x7a3c00,0.8); g.fillRect(dX+4,dY+4,6*T-8,2*T-6);
+    g.fillStyle(brandCol,0.35); g.fillRect(dX+4,dY+4,6*T-8,4);
+    g.fillStyle(0xffd700,1); g.fillRect(dX+3*T,dY+T,6,6);
+    g.fillStyle(0xffff00,0.25);
+    g.fillTriangle(dX+3*T,dY+T/2,dX+3*T-8,dY+T/2-8,dX+3*T+8,dY+T/2-8);
+    const rt=this.add.renderTexture(0,0,wW,wH).setOrigin(0,0).setDepth(0);
+    rt.draw(g,0,0); g.destroy();
+  }
+
+  buildWalls(wW,wH,T,IW,IH){
+    const add=(x,y,w,h)=>{const b=this.walls.create(x,y,null).setVisible(false);b.setSize(w,h);b.refreshBody();};
+    add(wW/2,T,wW,2*T);
+    add(T/2,wH/2,T,wH);
+    add(wW-T/2,wH/2,T,wH);
+    const dW=6*T, dCX=wW/2;
+    add(dCX/2,wH-T/2,dCX-dW/2,T);
+    add(wW-(wW-dCX-dW)/2-dW/2,wH-T/2,wW-dCX-dW,T);
+    [5,10,15].forEach(sy=>{ add(wW/2,(sy+0.5)*T,(IW-4)*T,T); });
+    add(wW/2,2.5*T+4,(IW-18)*T,T);
+  }
+
+  spawnNPCs(bld,T,IW,IH){
+    const zones=[{x:5,y:7},{x:10,y:7},{x:18,y:7},{x:25,y:7},{x:5,y:12},{x:15,y:12},{x:28,y:12},{x:8,y:18},{x:20,y:18}];
+    const nClients=Math.min(4+Math.floor(G.nivel/5),6);
+    const tints={pasiv:0x8888ff,nehotarat:0xffaa44,emotional:0xff8888,analitic:0x88ff88};
+    for(let i=0;i<nClients;i++){
+      const z=zones[i%zones.length];
+      const spawnX=(z.x+Math.random()*2)*T, spawnY=(z.y+Math.random())*T;
+      const rig=3+rnd(0,3);
+      const obiectieType=pick(Object.keys(OBIECTII));
+      const ob=OBIECTII[obiectieType];
+      const cd={
+        id:'in_'+bld.id+'_'+i+'_'+Date.now(),
+        name:pick(NAMES), persona:pick(['pasiv','nehotarat','emotional','analitic']),
+        rig, obiectieType, replica:pick(ob||['Hmm...care e mai bun?']),
+        hpMax:35+rig*10, reward:{bani:100+rig*25+rnd(0,80),xp:10+rig*4},
+        indoor:true, magazin:bld.id, legendary:false
+      };
+      const spr=this.physics.add.sprite(spawnX,spawnY,'player',0);
+      spr.setTint(tints[cd.persona]||0xaaaaaa);
+      spr.setSize(10,12).setOffset(3,12).setDepth(4).setMaxVelocity(40,40);
+      this.physics.add.collider(spr,this.walls);
+      const nameTag=this.add.text(spawnX,spawnY-16,cd.name,{
+        fontFamily:"'Press Start 2P',monospace",fontSize:'4px',
+        color:'#FFD600',backgroundColor:'#000000aa',padding:{x:2,y:1}
+      }).setDepth(6).setOrigin(0.5,1);
+      const exclaim=this.add.text(spawnX,spawnY-28,'!',{
+        fontFamily:"'Press Start 2P',monospace",fontSize:'8px',color:'#FFD600'
+      }).setDepth(7).setOrigin(0.5,1);
+      this.tweens.add({targets:exclaim,y:'-=3',duration:500,yoyo:true,repeat:-1});
+      this.intNPCs.push({spr,data:cd,nameTag,exclaim,isLeg:false,interacted:false,
+        patrol:{spawnX,spawnY,tx:spawnX,ty:spawnY,timer:rnd(0,90)}});
+    }
+    // Manager
+    const mgrSpr=this.physics.add.sprite(IW/2*T,2.2*T,'player',0);
+    mgrSpr.setTint(0xffd700).setSize(10,12).setOffset(3,12).setDepth(4);
+    const mgrTag=this.add.text(IW/2*T,2.2*T-16,'👔 MANAGER',{
+      fontFamily:"'Press Start 2P',monospace",fontSize:'4px',
+      color:'#FFD600',backgroundColor:'#000000aa',padding:{x:2,y:1}
+    }).setDepth(6).setOrigin(0.5,1);
+    this.managerNPC={spr:mgrSpr,data:{id:'mgr_'+bld.id,name:'Manager '+bld.label,
+      persona:'analitic',rig:1,obiectieType:'incredere',
+      replica:'Salut! Cauți ceva anume?',hpMax:10,reward:{bani:0,xp:2},
+      isManager:true,magazin:bld.id},nameTag:mgrTag,exclaim:null,isLeg:false,interacted:false};
+  }
+
+  update(){
+    if(G.dialogActive){this.player.setVelocity(0,0);return;}
+    const spd=100; let vx=0,vy=0;
+    if(G.keys.left)vx=-spd;else if(G.keys.right)vx=spd;
+    if(G.keys.up)vy=-spd;else if(G.keys.down)vy=spd;
+    this.player.setVelocity(vx,vy);
+    if(vx<0)this.player.anims.play('walk_l',true);
+    else if(vx>0)this.player.anims.play('walk_r',true);
+    else if(vy<0)this.player.anims.play('walk_u',true);
+    else if(vy>0)this.player.anims.play('walk_d',true);
+    else this.player.anims.stop();
+    // Patrol
+    this.intNPCs.forEach(npc=>{
+      if(npc.interacted){npc.spr.setVelocity(0,0);return;}
+      const p=npc.patrol; p.timer--;
+      if(p.timer<=0){p.timer=60+rnd(0,90);p.tx=p.spawnX+(Math.random()-0.5)*3*16;p.ty=p.spawnY+(Math.random()-0.5)*2*16;}
+      const dx=p.tx-npc.spr.x,dy=p.ty-npc.spr.y,d=Math.hypot(dx,dy);
+      if(d>4)npc.spr.setVelocity(dx/d*32,dy/d*32);else npc.spr.setVelocity(0,0);
+      npc.nameTag.setPosition(npc.spr.x,npc.spr.y-16);
+      if(npc.exclaim)npc.exclaim.setPosition(npc.spr.x,npc.spr.y-28);
+    });
+    if(this.managerNPC)this.managerNPC.nameTag.setPosition(this.managerNPC.spr.x,this.managerNPC.spr.y-16);
+    // Detection
+    const px=this.player.x,py=this.player.y;
+    this.nearNPC=null;
+    for(const npc of this.intNPCs){
+      if(npc.interacted||G.npcConvinsi[npc.data.id])continue;
+      if(Math.hypot(npc.spr.x-px,npc.spr.y-py)<32){this.nearNPC=npc;break;}
+    }
+    this.nearMgr=this.managerNPC&&Math.hypot(this.managerNPC.spr.x-px,this.managerNPC.spr.y-py)<36;
+    this.nearExit=py>(26-3)*16;
+    if(this.nearNPC)this.promptTxt.setText('[A] Abordează '+this.nearNPC.data.name).setVisible(true);
+    else if(this.nearMgr)this.promptTxt.setText('[A] Vorbește cu Managerul').setVisible(true);
+    else if(this.nearExit)this.promptTxt.setText('[B] Ieși din '+this.bldData.label).setVisible(true);
+    else this.promptTxt.setVisible(false);
+    const aDown=G.keys.a;
+    if(aDown&&!G.aWasDown)this.onA();
+    G.aWasDown=aDown;
+    if(G.keys.b&&this.nearExit)this.exitInterior();
+  }
+
+  onA(){
+    if(G.dialogActive)return;
+    if(this.nearNPC)this.startInteriorBattle(this.nearNPC);
+    else if(this.nearMgr){G.dialogActive=true;openHireScreen(this.bldData);}
+    else if(this.nearExit)this.exitInterior();
+  }
+
+  startInteriorBattle(npc){
+    if(G.dialogActive)return;
+    G.dialogActive=true;
+    this.player.setVelocity(0,0);
+    const loc=(G.job===this.bldData.id)?'indoor_own':'indoor_other';
+    startBattle(npc,this,loc);
+  }
+
+  exitInterior(){
+    G.dialogActive=false;
+    this.scene.stop();
+    this.scene.resume('World');
+    const ws=this.scene.get('World');
+    G.scene=ws;
+    $('minimap').style.visibility='visible';
+    if(ws&&ws.player)ws.player.setVelocity(0,0);
   }
 }
 
@@ -2180,9 +2398,18 @@ function bArgMenu(){
 async function bDoArgument(arg){
   BATTLE.argsUsed++;
   setBattlePrompt('⏳ Clientul procesează...');
-
   const client=BATTLE.client;
   const result=await callGroq(client, arg.text);
+  // Anger tracking
+  if(result.goodChoice){ BATTLE.clientAnger=Math.max(0,BATTLE.clientAnger-1); }
+  else{ BATTLE.clientAnger++; }
+  if(result.effect==='furios') BATTLE.clientAnger++;
+  updateAngerDisplay();
+  if(BATTLE.clientAnger>=3){
+    clearInterval(BATTLE.battleTimer); BATTLE.battleTimer=null;
+    typeText('bc-dialog-txt','Asta e! Mă duc la alt magazin!',30,()=>battleLose('rage'));
+    return;
+  }
   const dmg=calcDamage(result, client, arg);
   applyDamageToClient(dmg, result.replica||'...');
 }
@@ -2366,16 +2593,26 @@ function battleWin(){
   // Voucher cost
   if(BATTLE.voucherPierdut) bani=Math.max(0,bani-BATTLE.voucherPierdut);
 
-  // Job requirement
+  // Reward based on location + job
   let earnedBani=0;
-  if(G.job){
+  clearInterval(BATTLE.battleTimer); BATTLE.battleTimer=null;
+  if(BATTLE.location==='indoor_own'&&G.job){
+    earnedBani=Math.round(bani*1.5);
+    addBani(earnedBani); addXP(xp); addMoral(+15);
+    bonusMsg+='\n🏪 COMISION INTERIOR +50%!';
+  } else if(BATTLE.location==='indoor_other'){
+    const tip=60+rnd(0,90);
+    earnedBani=tip;
+    addBani(tip); addXP(Math.round(xp*0.7)); addMoral(+8);
+    bonusMsg+='\n🔄 Client convins la competitor: +'+tip+' RON';
+  } else if(G.job){
     earnedBani=bani;
     addBani(earnedBani); addXP(xp); addMoral(+10);
   } else {
-    const tip=5+Math.floor(Math.random()*16);
+    const tip=5+rnd(0,15);
     earnedBani=tip;
     addBani(tip); addXP(Math.round(xp*0.5)); addMoral(+3);
-    bonusMsg+='\n💰 Bacșiș primit: +'+tip+' RON\n(Angajează-te pentru comision real!)';
+    bonusMsg+='\n💰 Bacșiș: +'+tip+' RON\n(Angajează-te pentru comision real!)';
   }
 
   // Mark NPC
@@ -2394,10 +2631,18 @@ function battleWin(){
 
 function battleLose(reason){
   BATTLE.active=false;
-  $('bt-result-icon').textContent='😵';
-  $('bt-result-title').textContent='MORAL ZERO!';
+  clearInterval(BATTLE.battleTimer); BATTLE.battleTimer=null;
+  const icons={rage:'😤',timeout:'⏰',moral:'😵'};
+  const titles={rage:'CLIENTUL A PLECAT!',timeout:'TIMP EXPIRAT!',moral:'MORAL ZERO!'};
+  const msgs={
+    rage:'L-ai enervat prea tare.\nFii mai atent la abordare — clientul simte presiunea.',
+    timeout:'Clientul și-a pierdut răbdarea.\nFii mai rapid — cu cât avansezi, ai mai puțin timp!',
+    moral:'Ești prea epuizat să mai negociezi.\nMergi la Cafenea să îți refaci moralul.'
+  };
+  $('bt-result-icon').textContent=icons[reason]||'😵';
+  $('bt-result-title').textContent=titles[reason]||'EȘEC!';
   $('bt-result-title').style.color='#E30613';
-  $('bt-result-details').textContent='Ești prea epuizat să mai negociezi.\nMergi la Cafenea să îți refaci moralul.';
+  $('bt-result-details').textContent=msgs[reason]||'Încearcă din nou.';
   $('bt-result').classList.remove('hidden');
   addMoral(-10);
 }
