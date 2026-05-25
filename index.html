@@ -761,16 +761,76 @@ function makeClient(){
 }
 
 // ─── Groq API ────────────────────────────────────────────────────
+// ─── Date reale retail (sursă: site-uri oficiale 2025) ───────────
+const RETAIL_FACTS = {
+  flanco:{
+    nume:'FLANCO',
+    retur:'45 zile calendaristice (cel mai generos din piață; Altex/eMAG = 14 resp. 30)',
+    garantie_legala:'2 ani persoane fizice, 1 an persoane juridice (conf. lege UE)',
+    garantie_ext:'Garanția Extinsă Flanco: 1-2 ani extra',
+    rate:'Până la 40 rate fără dobândă prin Oney sau carduri bancare, aprobare instant',
+    livrare:'Gratuită de la 200 lei sau ridicare gratuită din orice magazin Flanco',
+    serviciu_cheie:'Preluăm produsul defect direct din magazin — tu nu cauți service',
+    serviciu2:'Reparație electrocasnice mari la domiciliu (tehnicieni la tine acasă)',
+    avantaj_vs_concurenta:'Retur 45 zile vs. 14 Altex; garanție gestionată intern fără stres curier'
+  },
+  atexl:{
+    nume:'ALTEX (ATEXL)',
+    retur:'14 zile, ambalaj original intact',
+    garantie_legala:'2 ani',
+    garantie_ext:'Extragaranție: 1-2 ani extra',
+    price_match:'Politica "2x Diferența" — plătim DUBLU diferența dacă găsești mai ieftin la concurență autorizată în 24h',
+    rate:'Rate prin Credex IFN (aprobare la raft) sau 36-40 rate bănci partenere',
+    livrare:'Gratuită de la 250 lei sau GRATUIT la "Rezervă și Ridică" în magazin',
+    serviciu_cheie:'"2x Diferența" — garanția absolută de cel mai mic preț',
+    serviciu2:'Rezervă online, ridici instant din magazin — zero așteptare livrare',
+    avantaj_vs_concurenta:'Cel mai mic preț garantat matematic; rețea fizică cea mai mare din România'
+  },
+  mage:{
+    nume:'eMAG (MagE)',
+    retur:'30 zile standard / 60 zile pentru membri Genius',
+    garantie_legala:'2 ani',
+    garantie_ext:'Garanție Plus: 1-2 ani extra',
+    instant_money_back:'Instant Money Back — banii pe card în MAX 30 minute după retur la EasyBox',
+    easybox:'EasyBox 24/7 — returnezi oricând, scanezi QR, gata; nu depinzi de curieri',
+    genius:'Genius: livrare gratuită (50 lei EasyBox/100 lei curier), 60 zile retur, oferte exclusive',
+    rate:'Până la 12 rate eMAG Wallet (cont propriu) sau 24 rate carduri',
+    livrare:'Gratuită Genius: 50 lei EasyBox / 100 lei curier; cea mai rapidă (livrare weekend)',
+    serviciu_cheie:'Instant Money Back + EasyBox 24/7 = retur cel mai simplu din România',
+    avantaj_vs_concurenta:'60 zile retur Genius; 3M+ produse; banii înapoi în 30 min nu 5-7 zile bancare'
+  }
+};
+
+function getRetailContext(magazin){
+  const f=RETAIL_FACTS[magazin]||RETAIL_FACTS.flanco;
+  return `MAGAZIN: ${f.nume}
+FAPTE REALE VERIFICATE:
+- Retur: ${f.retur}
+- Garanție legală: ${f.garantie_legala}
+- Garanție extinsă: ${f.garantie_ext||'disponibilă'}
+- Rate: ${f.rate||'disponibile'}
+- Livrare: ${f.livrare||'disponibilă'}
+${f.price_match?'- Price match: '+f.price_match:''}
+${f.instant_money_back?'- Money back: '+f.instant_money_back:''}
+${f.genius?'- Genius: '+f.genius:''}
+${f.easybox?'- EasyBox: '+f.easybox:''}
+- Serviciu cheie: ${f.serviciu_cheie}
+- Avantaj față de concurență: ${f.avantaj_vs_concurenta}
+REGULA: Dacă jucătorul citează un fapt real din lista de mai sus, clientul TREBUIE să reacționeze pozitiv (goodChoice:true). Dacă argumentul e vag/inventat, goodChoice:false.`;
+}
+
 const FALLBACKS = {
-  agresiv:  {replica:'Asta nu mă convinge deloc!',     goodChoice:false, effect:'none'},
-  pasiv:    {replica:'Hmm... poate aveți dreptate.',   goodChoice:true,  effect:'interesat'},
-  analitic: {replica:'Trebuie să verific specificațiile.',goodChoice:false,effect:'none'},
-  emotional:{replica:'Sună bine, dar nu știu...',      goodChoice:true,  effect:'interesat'},
-  grabit:   {replica:'Ok dar faceți repede.',          goodChoice:false, effect:'none'},
-  nehotarat:{replica:'Poate... mai mă gândesc.',       goodChoice:false, effect:'none'}
+  agresiv:  {replica:'Asta nu mă convinge deloc!',        goodChoice:false, effect:'none'},
+  pasiv:    {replica:'Hmm... poate aveți dreptate.',      goodChoice:true,  effect:'interesat'},
+  analitic: {replica:'Trebuie să verific specificațiile.',goodChoice:false, effect:'none'},
+  emotional:{replica:'Sună bine, dar nu știu...',         goodChoice:true,  effect:'interesat'},
+  grabit:   {replica:'Ok dar faceți repede.',             goodChoice:false, effect:'none'},
+  nehotarat:{replica:'Poate... mai mă gândesc.',          goodChoice:false, effect:'none'}
 };
 
 async function callGroq(client, playerChoice){
+  const magazin=G.job||G.magazin;
+  const retailCtx=getRetailContext(magazin);
   try {
     const resp = await Promise.race([
       fetch('https://api.groq.com/openai/v1/chat/completions',{
@@ -778,10 +838,24 @@ async function callGroq(client, playerChoice){
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
         body:JSON.stringify({
           model:'llama-3.3-70b-versatile',
-          max_tokens:100,temperature:0.8,
+          max_tokens:120, temperature:0.75,
           messages:[
-            {role:'system',content:'Ești un engine RPG de negociere retail românesc. Răspunde STRICT cu JSON valid, fără markdown:\n{"replica":"max 12 cuvinte română","goodChoice":true|false,"effect":"none|convins|interesat|furios"}'},
-            {role:'user',content:`Client: ${client.name} (${client.persona}, rigiditate ${client.rig}/10)\nObiecție client: "${client.replica}"\nPlayerul ${G.name} a răspuns: "${playerChoice}"\nPersuasiunea playerului: ${G.persuasiune}/10, nivel ${G.nivel}, magazin ${G.magazin}\nEvaluează reacția clientului.`}
+            {role:'system', content:
+`Ești engine-ul RPG pentru jocul "Retail Wars: România". Simulezi un client real din România care negociază achiziția unui produs electronic.
+${retailCtx}
+Răspunde STRICT cu JSON valid, fără markdown, fără text extra:
+{"replica":"reacție autentică max 14 cuvinte română, specifică contextului","goodChoice":true|false,"effect":"none|convins|interesat|furios"}
+- "replica" trebuie să sune ca un client real, nu ca un robot
+- Dacă argumentul folosește un fapt real din lista de mai sus → goodChoice:true
+- Dacă e vag, inventat sau irelevant → goodChoice:false
+- effect "furios" doar dacă clientul se simte presat sau manipulat`
+            },
+            {role:'user', content:
+`Client: ${client.name} (personalitate: ${client.persona}, rigiditate ${client.rig}/10)
+Obiecție inițială a clientului: "${client.replica}"
+Argumentul angajatului ${G.name} (nivel ${G.nivel}, persuasiune ${G.persuasiune}/10): "${playerChoice}"
+Cum reacționează clientul?`
+            }
           ]
         })
       }),
@@ -798,36 +872,94 @@ async function callGroq(client, playerChoice){
   }
 }
 
-// ─── Choices per obiectie ─────────────────────────────────────────
-const CHOICES_MAP = {
-  pret:[
-    'Calitatea justifică prețul pe termen lung.',
-    'Putem vedea variante în bugetul dvs.',
-    'Garanția extinsă e inclusă în preț.'
-  ],
-  calitate:[
-    'Produsul are certificare europeană CE.',
-    'Pot arăta recenziile verificate din platformă.',
-    'Mulți clienți revin după prima achiziție.'
-  ],
-  comparatie:[
-    'La noi aveți suport post-vânzare inclus.',
-    'Prețul online nu include instalarea și garanția.',
-    'Putem oferi aceleași beneficii plus livrare gratuită.'
-  ],
-  incredere:[
-    'Service-ul are timp de răspuns garantat 24h.',
-    'Returnul e gratuit în primele 30 de zile.',
-    'Pot arăta contractul de garanție acum.'
-  ],
-  urgenta:[
-    'E în stoc, îl putem pregăti în 10 minute.',
-    'Facem livrare prioritară dacă preferați.',
-    'Acum e promoție, prețul crește mâine.'
-  ]
-};
+// ─── Choices per obiectie (dialog, folosesc fapte reale per magazin) ─
 function getChoices(client){
-  const arr=CHOICES_MAP[client.obiectieType]||CHOICES_MAP.pret;
+  const mag=G.job||G.magazin;
+  const MAP={
+    flanco:{
+      pret:[
+        'Avem 45 zile retur — de 3× mai mult decât concurența.',
+        'Rate fără dobândă până la 40 rate prin Oney, aprobare instant.',
+        'Garanția Extinsă Flanco: protecție 1-2 ani extra peste lege.'
+      ],
+      calitate:[
+        'Produsul are certificare CE europeană obligatorie.',
+        'Garanție legală 2 ani — ne ocupăm noi de service, fără curieri.',
+        'Reparație la domiciliu pentru electrocasnice mari.'
+      ],
+      comparatie:[
+        '45 zile retur la noi față de 14 zile Altex sau 30 eMAG.',
+        'Ne ocupăm de garanție direct în magazin, fără service extern.',
+        'Livrare gratuită de la 200 lei sau ridicare gratuită din magazin.'
+      ],
+      incredere:[
+        'Returnul 45 zile — timp să testezi acasă fără presiune.',
+        'Garanție gestionată intern, nu trimiți tu produsul la service.',
+        'Finanțare Oney 100% online, aprobată pe telefon în 5 minute.'
+      ],
+      urgenta:[
+        'Produsul e în stoc, îl pregătim în 10 minute.',
+        'Ridicare imediată din magazin — fără să aștepți curier.',
+        'Factura e gata instant, pleci cu produsul acum.'
+      ]
+    },
+    atexl:{
+      pret:[
+        'Politica 2× Diferența: dacă găsești mai ieftin, plătim dublu diferența.',
+        'Rate prin Credex IFN — aprobare la raft, fără bancă.',
+        'Prețul cel mai mic garantat matematic — imposibil să ieși în pierdere.'
+      ],
+      calitate:[
+        'Extragaranție Altex disponibilă: 1-2 ani extra protecție.',
+        'Cea mai mare rețea de service din România în parteneriat.',
+        'Produsul are certificare CE și testare înainte de livrare.'
+      ],
+      comparatie:[
+        '2× Diferența — prețul cel mai mic garantat, altfel plătim noi.',
+        'Rezervă online, ridici instant din magazin — zero livrare.',
+        'Credex IFN: rate direct la raft, fără card bancar necesar.'
+      ],
+      incredere:[
+        'Garanție 2 ani + Extragaranție pentru protecție completă.',
+        '14 zile retur în stare originală, conform legii.',
+        '2× Diferența — garanția că nu plătești niciodată mai mult.'
+      ],
+      urgenta:[
+        'Rezervă acum online și ridici în 30 de minute din magazin.',
+        'Produsul e în stoc — verificat în timp real.',
+        'Credex IFN aprobat în 2 minute la casă, pleci cu produsul azi.'
+      ]
+    },
+    mage:{
+      pret:[
+        'Genius: livrare gratuită + 60 zile retur pentru abonați.',
+        'Rate eMAG Wallet: până la 12 rate din contul tău, fără bancă.',
+        'Cel mai mare catalog — 3 milioane produse, prețuri competitive.'
+      ],
+      calitate:[
+        'Garanție Plus eMAG: 1-2 ani extra, gestionat digital.',
+        'Recenzii verificate de cumpărători reali în platformă.',
+        'Returnezi simplu prin EasyBox — fără să explici nimănui.'
+      ],
+      comparatie:[
+        '30 zile retur standard; 60 zile cu Genius — dublu față de Altex.',
+        'Instant Money Back: banii pe card în 30 minute, nu 5-7 zile.',
+        'EasyBox 24/7 — returnezi la 3 noaptea dacă vrei, nu depinzi de curier.'
+      ],
+      incredere:[
+        'Instant Money Back: banii înapoi în MAX 30 minute după retur.',
+        'EasyBox 24/7 lângă tine — returnezi oricând, scanezi QR, gata.',
+        'eMAG Genius: 60 zile retur + livrare gratuită nelimitată.'
+      ],
+      urgenta:[
+        'Livrare a doua zi sau în aceeași zi în orașe mari.',
+        'Rezervi online acum și ridici de la EasyBox în 2 ore.',
+        'Plată instant prin eMAG Wallet — fără card fizic.'
+      ]
+    }
+  };
+  const storeMap=MAP[mag]||MAP.flanco;
+  const arr=storeMap[client.obiectieType]||storeMap.pret;
   return arr.map(t=>({text:t}));
 }
 
@@ -1672,42 +1804,126 @@ const STORE_CFG = {
 };
 
 // Product features per objection type (for Demonstrează mini-game)
-const DEMO_FEATURES = {
-  pret:     {correct:['Garanție 2 ani','Service inclus','Retur 30 zile'],wrong:['Culori variate','Ambalaj premium','Expediere rapidă']},
-  calitate: {correct:['Certificare CE','Baterie 5000mAh','Carcasă metal'],wrong:['Disponibil online','Livrare gratuită','4 culori']},
-  comparatie:{correct:['Suport 24/7','Instalare gratuită','Preț blocat'],wrong:['Model nou 2024','App dedicată','Garanție extinsă']},
-  incredere:{correct:['Retur 30 zile','Service rapid','Garanție legală'],wrong:['Design slim','Ecran AMOLED','Stocare 256GB']},
-  urgenta:  {correct:['În stoc acum','Ridicare azi','Facturare rapidă'],wrong:['Livrare 24h','Online disponibil','Rezervare online']}
+// DEMO_FEATURES: caracteristici corecte = fapte reale per magazin
+const DEMO_FEATURES_STORE = {
+  flanco:{
+    pret:     {correct:['Retur 45 zile','Rate Oney 40×','Garanție extinsă'],   wrong:['Culori variate','App dedicată','Expediere prioritară']},
+    calitate: {correct:['Certificare CE','Service în magazin','Reparație acasă'],wrong:['4 culori disponibile','Ambalaj premium','Livrare rapidă']},
+    comparatie:{correct:['45 zile vs 14 Altex','Service intern','Livrare 200 lei'],wrong:['Cel mai popular','Design modern','Baterie mare']},
+    incredere:{correct:['Retur 45 zile','Garanție 2 ani','Service intern'],    wrong:['Design slim','Ecran AMOLED','Stocare 256GB']},
+    urgenta:  {correct:['În stoc acum','Ridicare imediată','Rate instant Oney'],wrong:['Livrare expres','Online disponibil','Rezervare rapidă']}
+  },
+  atexl:{
+    pret:     {correct:['2× Diferența','Rate Credex','Extragaranție'],         wrong:['App dedicată','Ambalaj original','Livrare rapidă']},
+    calitate: {correct:['Certificare CE','Extragaranție','2× Diferența'],      wrong:['Design premium','4 culori','Model recent']},
+    comparatie:{correct:['2× Diferența','Credex la raft','Rezervă Ridică'],    wrong:['Cel mai popular','Rating înalt','Baterie puternică']},
+    incredere:{correct:['2× Diferența','Garanție 2 ani','Extragaranție'],      wrong:['Design slim','Ecran vibrant','Stocare mare']},
+    urgenta:  {correct:['Rezervă online','Ridicare 30 min','Credex 2 min'],   wrong:['Livrare expres','Rating bun','Disponibil acum']}
+  },
+  mage:{
+    pret:     {correct:['Genius 60 zile retur','Rate Wallet','3M produse'],    wrong:['Ambalaj premium','Culori variate','App dedicată']},
+    calitate: {correct:['Garanție Plus','Recenzii verificate','EasyBox retur'],wrong:['Design modern','Model 2024','Baterie mare']},
+    comparatie:{correct:['60 zile Genius','Instant Money Back','EasyBox 24/7'],wrong:['Cel mai popular','Rating înalt','Stoc mare']},
+    incredere:{correct:['Money Back 30 min','EasyBox 24/7','Genius 60 zile'], wrong:['Design slim','Ecran AMOLED','Stocare mare']},
+    urgenta:  {correct:['EasyBox 2 ore','Livrare azi','Wallet instant'],       wrong:['Rating bun','Model nou','Disponibil online']}
+  }
 };
+function getDemoFeatures(obiectieType){
+  const mag=G.job||G.magazin;
+  const store=DEMO_FEATURES_STORE[mag]||DEMO_FEATURES_STORE.flanco;
+  return store[obiectieType]||store.pret;
+}
 
 // Arguments per objection (for Argumentează sub-menu)
-const ARGS = {
-  pret:[
-    {text:'Calitatea justifică prețul — ROI pe termen lung.',  keyword:'calitate'},
-    {text:'Avem retur 30 zile fără justificări.',              keyword:'retur'},
-    {text:'Garanție 2 ani conform legislației europene.',      keyword:'garanție'},
-  ],
-  calitate:[
-    {text:'Produsul are certificare europeană CE obligatorie.',keyword:'certificare'},
-    {text:'Vă arăt recenziile verificate — 4.8/5 din 2000.',  keyword:'recenzii'},
-    {text:'Brandul e în top 3 fiabilitate conform testelor.',  keyword:'fiabilitate'},
-  ],
-  comparatie:[
-    {text:'La noi suportul post-vânzare e inclus în preț.',   keyword:'suport'},
-    {text:'Prețul online nu include instalarea și service.',   keyword:'instalare'},
-    {text:'Livrare gratuită plus instalare gratuită la noi.',  keyword:'livrare'},
-  ],
-  incredere:[
-    {text:'Returnul e gratuit în primele 30 de zile.',        keyword:'retur'},
-    {text:'Service-ul are timp de răspuns garantat 24h.',     keyword:'service'},
-    {text:'Contractul de garanție îl semnăm chiar acum.',     keyword:'contract'},
-  ],
-  urgenta:[
-    {text:'Produsul e în stoc, îl pregătim în 10 minute.',    keyword:'stoc'},
-    {text:'Facem factura acum și plecați imediat.',           keyword:'factura'},
-    {text:'Rezervare garantată — nimeni nu îl poate lua.',    keyword:'rezervare'},
-  ]
+// ARGS: argumente de luptă cu fapte reale per magazin
+const STORE_ARGS = {
+  flanco:{
+    pret:[
+      {text:'La Flanco ai 45 zile retur — de 3 ori mai mult ca alții.',  keyword:'45 zile'},
+      {text:'Rate fără dobândă: până la 40 rate prin Oney, instant.',     keyword:'rate'},
+      {text:'Garanția Extinsă Flanco: 1-2 ani extra față de lege.',       keyword:'garanție extinsă'},
+    ],
+    calitate:[
+      {text:'Garanție legală 2 ani — service gestionat direct de Flanco.',keyword:'garanție'},
+      {text:'Reparație electrocasnice mari la domiciliu, vin tehnicieni.', keyword:'reparație acasă'},
+      {text:'Produsul are certificare CE — standard european obligatoriu.',keyword:'certificare'},
+    ],
+    comparatie:[
+      {text:'45 zile retur față de 14 Altex — 3 luni să testezi acasă.',  keyword:'45 zile'},
+      {text:'Aduci produsul defect la noi în magazin, nu cauți tu service.',keyword:'service'},
+      {text:'Livrare gratuită de la 200 lei sau ridici gratis din magazin.',keyword:'livrare'},
+    ],
+    incredere:[
+      {text:'Returnezi 45 zile fără întrebări — testezi liniștit acasă.',  keyword:'retur'},
+      {text:'Garanția gestionată intern: tu aduci, noi rezolvăm.',         keyword:'garanție'},
+      {text:'Finanțare Oney 100% online — aprobare în 5 minute pe telefon.',keyword:'finanțare'},
+    ],
+    urgenta:[
+      {text:'E în stoc acum — pregătim factura și pleci în 10 minute.',   keyword:'stoc'},
+      {text:'Ridicare imediată din magazin — zero așteptare curier.',      keyword:'ridicare'},
+      {text:'Plată în rate aprobată instant, pleci azi cu produsul.',      keyword:'rate instant'},
+    ]
+  },
+  atexl:{
+    pret:[
+      {text:'2× Diferența: dacă găsești mai ieftin, plătim DUBLU diferența.',keyword:'2x diferența'},
+      {text:'Rate prin Credex IFN — aprobare directă la raft, fără bancă.',  keyword:'credex'},
+      {text:'Cel mai mic preț garantat matematic prin politica noastră.',     keyword:'preț garantat'},
+    ],
+    calitate:[
+      {text:'Extragaranție Altex: 1-2 ani extra față de garanția legală.',    keyword:'extragaranție'},
+      {text:'Produsul are certificare CE și garantăm conformitatea.',          keyword:'certificare'},
+      {text:'Dacă se strică în garanție, îl înlocuim sau rambursăm.',         keyword:'înlocuire'},
+    ],
+    comparatie:[
+      {text:'2× Diferența — imposibil să găsești mai ieftin și să pierzi.',   keyword:'2x'},
+      {text:'Rezervă online, ridici instant din magazin — fără livrare.',      keyword:'rezervă ridică'},
+      {text:'Credex IFN la raft — rate fără card bancar, aprobare 2 minute.',  keyword:'credex'},
+    ],
+    incredere:[
+      {text:'Garanție 2 ani + Extragaranție pentru protecție totală.',        keyword:'garanție'},
+      {text:'2× Diferența — niciodată nu plătești mai mult decât piața.',     keyword:'preț'},
+      {text:'Retur 14 zile în stare originală conform legii consumatorului.',  keyword:'retur'},
+    ],
+    urgenta:[
+      {text:'Rezervi online acum, ridici în 30 minute din magazin.',          keyword:'rezervare'},
+      {text:'Credex aprobat în 2 minute la casă — pleci cu produsul azi.',    keyword:'credex rapid'},
+      {text:'E în stoc confirmat — verificat în timp real pe platformă.',     keyword:'stoc'},
+    ]
+  },
+  mage:{
+    pret:[
+      {text:'Genius: livrare gratuită + 60 zile retur pentru abonați.',       keyword:'genius'},
+      {text:'Rate eMAG Wallet: până la 12 rate din contul tău, fără bancă.',  keyword:'wallet'},
+      {text:'3 milioane produse — cel mai mic preț prin competiție reală.',   keyword:'3 milioane'},
+    ],
+    calitate:[
+      {text:'Garanție Plus eMAG: 1-2 ani extra, gestionat 100% digital.',    keyword:'garanție plus'},
+      {text:'Recenzii verificate de cumpărători reali — transparență totală.',keyword:'recenzii'},
+      {text:'Returnezi simplu prin EasyBox — fără explicații, fără curieri.',  keyword:'easybox'},
+    ],
+    comparatie:[
+      {text:'30 zile retur standard; 60 zile Genius — dublu față de Altex.',  keyword:'60 zile'},
+      {text:'Instant Money Back: banii pe card în 30 minute, nu 5-7 zile.',   keyword:'instant money'},
+      {text:'EasyBox 24/7 lângă tine — returnezi la 3 noaptea, zero stres.',  keyword:'easybox'},
+    ],
+    incredere:[
+      {text:'Instant Money Back — banii înapoi în MAX 30 minute după retur.', keyword:'30 minute'},
+      {text:'EasyBox 24/7: scanezi QR, pui produsul, banii vin singuri.',     keyword:'easybox'},
+      {text:'Genius: 60 zile retur + livrare gratuită nelimitată.',           keyword:'genius'},
+    ],
+    urgenta:[
+      {text:'Livrare aceeași zi sau a doua zi — cea mai rapidă din piață.',   keyword:'livrare rapidă'},
+      {text:'Ridici de la EasyBox în 2 ore după comandă, 24/7.',              keyword:'easybox rapid'},
+      {text:'Plată instant prin eMAG Wallet — fără card fizic, fără bancă.',  keyword:'wallet instant'},
+    ]
+  }
 };
+function getArgs(obiectieType){
+  const mag=G.job||G.magazin;
+  const store=STORE_ARGS[mag]||STORE_ARGS.flanco;
+  return store[obiectieType]||store.pret;
+}
 
 // ─── Draw sprites on canvas elements ────────────────────────────
 function drawClientSprite(canvasEl, client){
@@ -1829,7 +2045,7 @@ function startBattle(npcRef, worldScene){
   BATTLE.elegantSale=true;
 
   // Pre-shuffle demo features once per battle so retries show same buttons
-  const df=DEMO_FEATURES[client.obiectieType]||DEMO_FEATURES.pret;
+  const df=getDemoFeatures(client.obiectieType);
   BATTLE.demoFeats=[...df.correct.map(f=>({t:f,ok:true})),...df.wrong.map(f=>({t:f,ok:false}))];
   BATTLE.demoFeats.sort(()=>Math.random()-0.5);
   BATTLE.demoCorrect=df.correct;
@@ -1900,7 +2116,7 @@ function bAction(type){
 // Argumentează → sub-menu cu 3 argumente + Groq call
 function bArgMenu(){
   const client=BATTLE.client;
-  const args=ARGS[client.obiectieType]||ARGS.pret;
+  const args=getArgs(client.obiectieType);
   const sub=$('bt-sub-menu');
   sub.innerHTML='';
   setBattlePrompt('Alege argumentul:');
