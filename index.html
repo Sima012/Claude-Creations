@@ -400,6 +400,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action
   padding:10px 20px;font-family:'Press Start 2P',monospace;font-size:7px;
   cursor:pointer;margin:4px;
 }
+#bt-timer-stripe{display:flex;align-items:center;gap:6px;padding:4px 10px;background:#0d0d20;border-bottom:2px solid #1a1a3a;flex-shrink:0;}
+#bt-timer-bar-wrap{flex:1;height:8px;background:#111;border:2px solid #333;overflow:hidden;border-radius:2px;}
+#bt-client-timer{height:100%;width:100%;background:#00cc44;transition:width 0.25s linear;border-radius:1px;}
+#bt-secs{font-family:'Press Start 2P',monospace;font-size:6px;color:#FFD600;flex-shrink:0;min-width:28px;text-align:right;}
+#bc-anger{font-size:14px;display:inline-block;margin-left:6px;vertical-align:middle;}
 </style>
 </head>
 <body>
@@ -483,11 +488,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action
 
 <!-- BATTLE SCREEN -->
 <div id="battle-screen" class="hidden">
+  <div id="bt-timer-stripe">
+    <div id="bt-timer-bar-wrap"><div id="bt-client-timer"></div></div>
+    <div id="bt-secs">60s</div>
+  </div>
   <div class="bt-client-zone">
     <canvas id="bc-sprite" width="64" height="80"></canvas>
     <div class="bc-info">
       <span class="bc-name" id="bc-name">Client</span>
       <span class="bc-type" id="bc-type">agresiv · obiecție preț</span>
+      <span id="bc-anger" title="Răbdarea clientului">😐</span>
       <div class="bar-label">REZISTENȚĂ LA CUMPĂRARE</div>
       <div class="hp-bar-wrap">
         <div class="hp-bar-fill" id="bc-hp-fill" style="width:100%;background:linear-gradient(90deg,#cc0000,#ff4444)"></div>
@@ -633,6 +643,16 @@ function pad2(n){ return String(n).padStart(2,'0'); }
 function numFmt(n){ return n.toLocaleString('ro'); }
 function rnd(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
 function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function getBattleTimeLimit(){
+  const n=G.nivel;
+  if(n<5) return 60; if(n<10) return 55; if(n<15) return 50;
+  if(n<20) return 45; if(n<25) return 35; if(n<30) return 25; return 20;
+}
+function updateAngerDisplay(){
+  const icons=['😐','😒','😠','🤬'];
+  const el=$('bc-anger');
+  if(el) el.textContent=icons[Math.min(BATTLE.clientAnger,3)];
+}
 function clamp(v,mn,mx){ return Math.max(mn,Math.min(mx,v)); }
 function dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
 function hex2n(h){ return parseInt(h.replace('#',''),16); }
@@ -1795,6 +1815,7 @@ const BATTLE = {
   voucherUsed:false, sefCallsInBattle:0, argsUsed:0,
   elegantSale:true,
   demoTimer:null, demoSelected:[], demoCorrect:[], demoFeats:null,
+  timeLimitSec:60, timeLeft:60, clientAnger:0, battleTimer:null, location:'outdoor',
 };
 
 const STORE_CFG = {
@@ -2030,7 +2051,7 @@ function drawPlayerBattleSprite(canvasEl){
 }
 
 // ─── Start battle ────────────────────────────────────────────────
-function startBattle(npcRef, worldScene){
+function startBattle(npcRef, worldScene, location){
   const client=npcRef.data;
   BATTLE.active=true;
   BATTLE.npcRef=npcRef;
@@ -2050,6 +2071,22 @@ function startBattle(npcRef, worldScene){
   BATTLE.demoFeats.sort(()=>Math.random()-0.5);
   BATTLE.demoCorrect=df.correct;
 
+  BATTLE.location=location||'outdoor';
+  BATTLE.clientAnger=0;
+  BATTLE.timeLimitSec=getBattleTimeLimit();
+  BATTLE.timeLeft=BATTLE.timeLimitSec;
+  clearInterval(BATTLE.battleTimer);
+  BATTLE.battleTimer=setInterval(()=>{
+    if(!BATTLE.active){clearInterval(BATTLE.battleTimer);return;}
+    BATTLE.timeLeft=Math.max(0,BATTLE.timeLeft-0.25);
+    const pct=BATTLE.timeLeft/BATTLE.timeLimitSec*100;
+    const fill=$('bt-client-timer');
+    if(fill){fill.style.width=pct+'%';fill.style.background=pct>50?'#00cc44':pct>25?'#ffaa00':'#ff2200';}
+    const secs=$('bt-secs');
+    if(secs) secs.textContent=Math.ceil(BATTLE.timeLeft)+'s';
+    if(BATTLE.timeLeft<=0){clearInterval(BATTLE.battleTimer);BATTLE.battleTimer=null;battleLose('timeout');}
+  },250);
+  updateAngerDisplay();
   // Keep D-pad controls visible; only hide minimap during battle
   $('minimap').style.visibility='hidden';
 
@@ -2370,8 +2407,10 @@ function closeBattle(){
 }
 
 function closeBattleClean(){
+  clearInterval(BATTLE.battleTimer); BATTLE.battleTimer=null;
+  BATTLE.active=false;
   $('battle-screen').classList.add('hidden');
-  $('minimap').style.visibility='visible';
+  if(!(G.scene instanceof ShopInteriorScene)) $('minimap').style.visibility='visible';
   G.dialogActive=false;
   BATTLE.voucherPierdut=0;
   closeBattleSubmenu();
