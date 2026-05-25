@@ -47,6 +47,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action
   display:flex;align-items:flex-end;justify-content:space-between;
   padding:10px 16px 18px;flex-shrink:0;
   border-top:2px solid #1a1a1a;
+  position:relative;z-index:920;
 }
 .dpad{
   display:grid;
@@ -264,9 +265,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action
 
 /* ─── BATTLE SCREEN ──────────────────── */
 #battle-screen{
-  position:fixed;top:0;left:0;right:0;bottom:0;
+  position:fixed;top:0;left:0;right:0;bottom:160px;
   z-index:900;display:flex;flex-direction:column;
   background:#0a0818;font-family:'Press Start 2P',monospace;
+  overflow-y:auto;
 }
 .bt-client-zone{
   flex:0 0 42%;display:flex;align-items:center;
@@ -375,10 +377,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action
 
 /* ─── HIRE SCREEN ────────────────────── */
 #hire-screen{
-  position:fixed;inset:0;z-index:850;
-  background:rgba(0,0,0,0.94);
+  position:fixed;top:0;left:0;right:0;bottom:160px;z-index:850;
+  background:rgba(0,0,0,0.96);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:12px;padding:24px;
+  gap:12px;padding:24px;overflow-y:auto;
   font-family:'Press Start 2P',monospace;
 }
 #hire-title{font-size:9px;color:#FFD600;text-align:center;}
@@ -433,15 +435,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action
   <div id="phaser-container"></div>
 
   <div id="controls" class="hidden">
-    <div class="dpad">
+    <div class="dpad" id="dpad" ontouchmove="dpadSlide(event)" ontouchend="dpadEnd(event)">
       <div class="dp-empty"></div>
-      <div class="dp" id="d-up"   ontouchstart="dp('up',1)"   ontouchend="dp('up',0)"   onmousedown="dp('up',1)"   onmouseup="dp('up',0)">▲</div>
+      <div class="dp" id="d-up"   ontouchstart="dp('up',1)"   onmousedown="dp('up',1)"   onmouseup="dp('up',0)">▲</div>
       <div class="dp-empty"></div>
-      <div class="dp" id="d-left" ontouchstart="dp('left',1)" ontouchend="dp('left',0)" onmousedown="dp('left',1)" onmouseup="dp('left',0)">◄</div>
+      <div class="dp" id="d-left" ontouchstart="dp('left',1)" onmousedown="dp('left',1)" onmouseup="dp('left',0)">◄</div>
       <div class="dp dp-empty" style="opacity:0.08;pointer-events:none;border-radius:50%">●</div>
-      <div class="dp" id="d-right"ontouchstart="dp('right',1)"ontouchend="dp('right',0)"onmousedown="dp('right',1)"onmouseup="dp('right',0)">►</div>
+      <div class="dp" id="d-right"ontouchstart="dp('right',1)"onmousedown="dp('right',1)"onmouseup="dp('right',0)">►</div>
       <div class="dp-empty"></div>
-      <div class="dp" id="d-down" ontouchstart="dp('down',1)" ontouchend="dp('down',0)" onmousedown="dp('down',1)" onmouseup="dp('down',0)">▼</div>
+      <div class="dp" id="d-down" ontouchstart="dp('down',1)" onmousedown="dp('down',1)" onmouseup="dp('down',0)">▼</div>
       <div class="dp-empty"></div>
     </div>
     <div class="action-btns">
@@ -651,6 +653,21 @@ function ab(btn,on){
   G.keys[btn]=!!on;
   $('btn-'+btn)?.classList.toggle('on',!!on);
   if(on&&btn==='a'){ if(G.scene?.onA) G.scene.onA(); }
+}
+const DPAD_IDS={'d-up':'up','d-left':'left','d-right':'right','d-down':'down'};
+let _dpadActiveDir=null;
+function dpadSlide(e){
+  const t=e.touches[0];
+  const el=document.elementFromPoint(t.clientX,t.clientY);
+  const dir=el&&DPAD_IDS[el.id];
+  if(dir===_dpadActiveDir) return;
+  if(_dpadActiveDir) dp(_dpadActiveDir,0);
+  _dpadActiveDir=dir||null;
+  if(_dpadActiveDir) dp(_dpadActiveDir,1);
+}
+function dpadEnd(e){
+  if(_dpadActiveDir){ dp(_dpadActiveDir,0); _dpadActiveDir=null; }
+  ['up','down','left','right'].forEach(d=>dp(d,0));
 }
 document.addEventListener('keydown',e=>{
   const m={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',KeyZ:'a',KeyX:'b',Space:'a'};
@@ -1161,8 +1178,8 @@ class WorldScene extends Phaser.Scene {
     const T=TILE;
 
     const TCOL={
-      0:0x4a7c4e,1:0x555555,2:0x888888,
-      3:0x606060,4:0x2255aa,5:0x3d6b41,6:0x222222
+      0:0x4a3a72,1:0x555566,2:0x888899,
+      3:0x60607a,4:0x2255aa,5:0x3a2a65,6:0x221e30
     };
 
     // Base tiles
@@ -1325,8 +1342,8 @@ class WorldScene extends Phaser.Scene {
       }
     }
 
-    // Start near Flanco
-    const startX=38*TILE, startY=32*TILE;
+    // Start just south of Flanco entry
+    const startX=44*TILE, startY=28*TILE;
     this.player=this.physics.add.sprite(startX,startY,'player',0);
     this.player.setSize(10,12).setOffset(3,12).setDepth(5).setCollideWorldBounds(true);
     this.player.setMaxVelocity(200,200);
@@ -1543,7 +1560,7 @@ class WorldScene extends Phaser.Scene {
     if(!nearNPC){
       for(const b of this.buildings){
         const ex=b.entry.x*TILE, ey=b.entry.y*TILE;
-        if(Math.abs(px-ex)<28&&Math.abs(py-ey)<28){ nearBld=b; break; }
+        if(Math.abs(px-ex)<40&&Math.abs(py-ey)<40){ nearBld=b; break; }
       }
     }
 
@@ -1645,7 +1662,7 @@ const BATTLE = {
   playerMoral:100,
   voucherUsed:false, sefCallsInBattle:0, argsUsed:0,
   elegantSale:true,
-  demoTimer:null, demoSelected:[], demoCorrect:[],
+  demoTimer:null, demoSelected:[], demoCorrect:[], demoFeats:null,
 };
 
 const STORE_CFG = {
@@ -1811,8 +1828,13 @@ function startBattle(npcRef, worldScene){
   BATTLE.argsUsed=0;
   BATTLE.elegantSale=true;
 
-  // Hide controls
-  $('controls').style.visibility='hidden';
+  // Pre-shuffle demo features once per battle so retries show same buttons
+  const df=DEMO_FEATURES[client.obiectieType]||DEMO_FEATURES.pret;
+  BATTLE.demoFeats=[...df.correct.map(f=>({t:f,ok:true})),...df.wrong.map(f=>({t:f,ok:false}))];
+  BATTLE.demoFeats.sort(()=>Math.random()-0.5);
+  BATTLE.demoCorrect=df.correct;
+
+  // Keep D-pad controls visible; only hide minimap during battle
   $('minimap').style.visibility='hidden';
 
   // Fill UI
@@ -1929,17 +1951,13 @@ function calcDamage(result, client, arg){
 
 // Demonstrează → tap mini-game
 function bDemoGame(){
-  const client=BATTLE.client;
-  const feats=DEMO_FEATURES[client.obiectieType]||DEMO_FEATURES.pret;
   BATTLE.demoSelected=[];
-  BATTLE.demoCorrect=feats.correct;
 
-  setBattlePrompt('Tapează cele 3 corecte! (5s)');
+  setBattlePrompt('Tapează cele 3 corecte! (8s)');
   showBattleActions(false);
 
-  // Build shuffled feature list (3 correct + 3 wrong)
-  const all=[...feats.correct.map(f=>({t:f,ok:true})),...feats.wrong.map(f=>({t:f,ok:false}))];
-  all.sort(()=>Math.random()-0.5);
+  // Use pre-shuffled features from battle start (consistent per battle)
+  const all=BATTLE.demoFeats;
 
   const dz=$('bt-demo-zone');
   const df=$('demo-features');
@@ -1952,6 +1970,7 @@ function bDemoGame(){
     const btn=document.createElement('div');
     btn.className='demo-feat-btn';
     btn.textContent=f.t;
+    btn.dataset.ok=f.ok?'1':'0';
     btn.onclick=()=>{
       if(btn.classList.contains('tapped')||btn.classList.contains('wrong')) return;
       if(f.ok){ btn.classList.add('tapped'); BATTLE.demoSelected.push(f.t); }
@@ -1962,26 +1981,35 @@ function bDemoGame(){
     df.appendChild(btn);
   });
 
-  // Timer
-  let timeLeft=5.0;
+  // 8s timer
+  let timeLeft=8.0;
   clearInterval(BATTLE.demoTimer);
   BATTLE.demoTimer=setInterval(()=>{
     timeLeft-=0.1;
-    $('demo-timer-fill').style.width=Math.max(0,timeLeft/5*100)+'%';
-    if(timeLeft<=0){ clearInterval(BATTLE.demoTimer); finishDemo(); }
+    $('demo-timer-fill').style.width=Math.max(0,timeLeft/8*100)+'%';
+    if(timeLeft<=0){ clearInterval(BATTLE.demoTimer); finishDemo(true); }
   },100);
 }
 
-function finishDemo(){
+function finishDemo(timedOut){
   clearInterval(BATTLE.demoTimer);
   const correct=BATTLE.demoSelected.filter(x=>x).length;
-  const dmg=correct===3?30:correct===2?15:5;
-  const client=BATTLE.client;
+  // Highlight remaining correct answers when time expires
+  if(timedOut){
+    document.querySelectorAll('.demo-feat-btn').forEach(btn=>{
+      if(!btn.classList.contains('tapped')&&btn.dataset.ok==='1')
+        btn.classList.add('tapped');
+    });
+  }
+  const dmg=correct===3?35:correct===2?18:correct===1?8:5;
   const replica=correct===3?'Wow, impresionant! Nu știam că...'
     :correct===2?'Hmm, câteva puncte bune...'
+    :timedOut?'Ai uitat să demonstrezi ceva important!'
     :'Asta nu e relevant pentru mine.';
-  $('bt-demo-zone').classList.add('hidden');
-  applyDamageToClient(dmg, replica);
+  setTimeout(()=>{
+    $('bt-demo-zone').classList.add('hidden');
+    applyDamageToClient(dmg, replica);
+  }, timedOut?600:0);
 }
 
 // Voucher
@@ -2091,8 +2119,10 @@ function battleWin(){
     earnedBani=bani;
     addBani(earnedBani); addXP(xp); addMoral(+10);
   } else {
-    addXP(Math.round(xp*0.5)); addMoral(+3);
-    bonusMsg+='\n⚠️ Fără job, comision = 0 RON!';
+    const tip=5+Math.floor(Math.random()*16);
+    earnedBani=tip;
+    addBani(tip); addXP(Math.round(xp*0.5)); addMoral(+3);
+    bonusMsg+='\n💰 Bacșiș primit: +'+tip+' RON\n(Angajează-te pentru comision real!)';
   }
 
   // Mark NPC
@@ -2125,7 +2155,6 @@ function closeBattle(){
 
 function closeBattleClean(){
   $('battle-screen').classList.add('hidden');
-  $('controls').style.visibility='visible';
   $('minimap').style.visibility='visible';
   G.dialogActive=false;
   BATTLE.voucherPierdut=0;
@@ -2162,7 +2191,7 @@ function openHireScreen(bld){
 
     if(bld.id==='cafenea'){
       acts.innerHTML=`
-        <button class="hire-btn" onclick="doSpecialBuilding('cafenea')">☕ Bea o cafea (+25 Moral)</button>
+        <button class="hire-btn" onclick="doSpecialBuilding('cafenea')">☕ Bea o cafea (-15 RON / +25 Moral)</button>
         <button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>
       `;
     } else {
@@ -2232,8 +2261,10 @@ function doSwitchJob(newMagazin){
 
 function doSpecialBuilding(id){
   if(id==='cafenea'){
+    if(G.bani<15){ notify('❌ Nu ai suficienți bani pentru o cafea! (15 RON)'); return; }
+    addBani(-15);
     addMoral(25);
-    notify('☕ Cafea băută! +25 Moral');
+    notify('☕ Cafea băută! -15 RON · +25 Moral');
     closeHireScreen();
   }
 }
