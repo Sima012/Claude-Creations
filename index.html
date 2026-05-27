@@ -405,6 +405,34 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action
 #bt-client-timer{height:100%;width:100%;background:#00cc44;transition:width 0.25s linear;border-radius:1px;}
 #bt-secs{font-family:'Press Start 2P',monospace;font-size:6px;color:#FFD600;flex-shrink:0;min-width:28px;text-align:right;}
 #bc-anger{font-size:14px;display:inline-block;margin-left:6px;vertical-align:middle;}
+
+/* ─── ACHIEVEMENTS & LEADERBOARD ─────────── */
+#achievements-screen,#leaderboard-screen{
+  position:fixed;top:0;left:0;right:0;bottom:160px;z-index:860;
+  background:rgba(0,0,0,0.97);
+  display:flex;flex-direction:column;align-items:center;
+  gap:8px;padding:18px 14px 12px;overflow-y:auto;
+  font-family:'Press Start 2P',monospace;
+}
+.ach-title,.lb-title{font-size:9px;color:#FFD600;text-align:center;margin-bottom:8px;}
+.ach-item{
+  display:flex;align-items:center;gap:10px;width:100%;max-width:340px;
+  padding:8px 10px;border:1px solid #222;background:#111;border-radius:4px;
+  font-family:'VT323',monospace;
+}
+.ach-unlocked{border-color:#FFD600!important;background:#151000!important;}
+.ach-icon{font-size:20px;flex-shrink:0;width:28px;text-align:center;}
+.ach-name{font-size:11px;color:#FFD600;font-family:'Press Start 2P',monospace;}
+.ach-desc{font-size:13px;color:#888;margin-top:2px;}
+.ach-locked .ach-name{color:#444;font-size:9px;}
+.lb-row{
+  display:flex;justify-content:space-between;align-items:center;
+  width:100%;max-width:340px;padding:7px 10px;
+  border:1px solid #1a1a2a;background:#0a0a15;
+  font-family:'VT323',monospace;font-size:16px;color:#ccc;
+  margin:3px 0;
+}
+.lb-row:first-child{border-color:#FFD600;color:#FFD600;background:#120f00;}
 </style>
 </head>
 <body>
@@ -452,6 +480,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action
       <div class="dp-empty"></div>
     </div>
     <div class="action-btns">
+      <div style="display:flex;flex-direction:column;gap:6px;padding-bottom:4px">
+        <div class="btn-select" onclick="showAchievements()">🏆</div>
+        <div class="btn-select" onclick="showLeaderboard()">🥇</div>
+      </div>
       <div class="abtn btn-b" id="btn-b" ontouchstart="ab('b',1)" ontouchend="ab('b',0)" onmousedown="ab('b',1)" onmouseup="ab('b',0)">B<br>ÎNAPOI</div>
       <div class="abtn btn-a" id="btn-a" ontouchstart="ab('a',1)" ontouchend="ab('a',0)" onmousedown="ab('a',1)" onmouseup="ab('a',0)">A<br>ACȚIUNE</div>
     </div>
@@ -465,7 +497,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action
   <div class="pixel-hero" id="menu-hero">🧑‍💼</div>
   <button class="mbtn" id="btn-continue" onclick="doContinue()">▶ CONTINUĂ</button>
   <button class="mbtn" id="btn-newgame" onclick="doNewGame()">✦ JOC NOU</button>
-  <div class="version-tag">v0.1-Phase1 · Phase2: Battle System</div>
+  <div style="display:flex;gap:10px;margin-top:6px">
+    <button class="mbtn" style="font-size:6px;padding:8px 14px" onclick="showAchievementsMenu()">🏆 REALIZĂRI</button>
+    <button class="mbtn" style="font-size:6px;padding:8px 14px" onclick="showLeaderboardMenu()">🥇 CLASAMENT</button>
+  </div>
+  <div class="version-tag">v1.0 · Retail Wars România · Phase 3</div>
 </div>
 
 <div id="char-screen" class="ov hidden"></div>
@@ -561,6 +597,20 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action
   <div id="hire-actions"></div>
 </div>
 
+<!-- ACHIEVEMENTS SCREEN -->
+<div id="achievements-screen" class="hidden">
+  <div class="ach-title">🏆 REALIZĂRILE TALE</div>
+  <div id="ach-list" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:6px;padding-bottom:16px"></div>
+  <button class="hire-btn-cancel" style="flex-shrink:0" onclick="closeAchievements()">← Înapoi</button>
+</div>
+
+<!-- LEADERBOARD SCREEN -->
+<div id="leaderboard-screen" class="hidden">
+  <div class="lb-title">🥇 CLASAMENT LOCAL</div>
+  <div id="lb-list" style="width:100%;display:flex;flex-direction:column;align-items:center;padding-bottom:16px"></div>
+  <button class="hire-btn-cancel" style="flex-shrink:0" onclick="closeLeaderboard()">← Înapoi</button>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════
@@ -589,10 +639,13 @@ const G = {
   name:'', gender:'M', appearance:0, magazin:'flanco',
   nivel:1, xp:0, bani:1500, moral:100, persuasiune:3,
   job:null,            // null | 'flanco' | 'atexl' | 'mage'
-  jobSince:0,          // in-game days since hired (cooldown 90 days to switch)
+  jobSince:0,          // in-game days since hired
   npcConvinsi:{}, achievements:[], afaceri:[],
   gameHour:8, gameMin:0, gameDay:1,
   sefCallsToday:0,     // sună șeful counter (resets daily)
+  savings:0, loan:0, loanDay:0,   // bancă
+  elegantSales:0, coffees:0,      // achievement counters
+  lastSalaryDay:0,                // anti-duplicate salary guard
   // runtime
   scene:null, dialogActive:false,
   keys:{up:false,down:false,left:false,right:false,a:false,b:false},
@@ -606,7 +659,9 @@ function saveGame(){
     nivel:G.nivel,xp:G.xp,bani:G.bani,moral:G.moral,persuasiune:G.persuasiune,
     job:G.job,jobSince:G.jobSince,sefCallsToday:G.sefCallsToday,
     npcConvinsi:G.npcConvinsi,achievements:G.achievements,afaceri:G.afaceri,
-    gameHour:G.gameHour,gameMin:G.gameMin,gameDay:G.gameDay
+    gameHour:G.gameHour,gameMin:G.gameMin,gameDay:G.gameDay,
+    savings:G.savings,loan:G.loan,loanDay:G.loanDay,
+    elegantSales:G.elegantSales,coffees:G.coffees,lastSalaryDay:G.lastSalaryDay
   });
 }
 function loadIntoG(d){ Object.assign(G,d); updateHUD(); }
@@ -997,6 +1052,14 @@ function initMenu(){
   $('btn-continue').style.display=save?'':'none';
   $('btn-newgame').textContent=save?'✦ JOC NOU':'▶ ÎNCEPE';
 }
+function showAchievementsMenu(){
+  const save=Save.load();
+  if(save) loadIntoG(save);
+  showAchievements();
+}
+function showLeaderboardMenu(){
+  showLeaderboard();
+}
 function doContinue(){
   const save=Save.load();
   if(!save){ doNewGame(); return; }
@@ -1160,7 +1223,9 @@ function beginGame(){
   G.nivel=1; G.xp=0; G.moral=100; G.persuasiune=3;
   G.bani={flanco:1500,atexl:2000,mage:3000}[CD.magazin];
   G.npcConvinsi={}; G.achievements=[]; G.afaceri=[];
-  G.gameHour=8; G.gameMin=0;
+  G.gameHour=8; G.gameMin=0; G.gameDay=1;
+  G.savings=0; G.loan=0; G.loanDay=0;
+  G.elegantSales=0; G.coffees=0; G.lastSalaryDay=0;
   saveGame();
   $('char-screen').classList.add('hidden');
   startWorld();
@@ -1251,7 +1316,12 @@ class WorldScene extends Phaser.Scene {
       delay:12000, loop:true,
       callback:()=>{
         G.gameMin+=30;
-        if(G.gameMin>=60){ G.gameMin-=60; G.gameHour=(G.gameHour-8+1)%12+8; }
+        if(G.gameMin>=60){
+          G.gameMin-=60;
+          const oldHour=G.gameHour;
+          G.gameHour=(G.gameHour-8+1)%12+8;
+          if(G.gameHour<oldHour){ G.gameDay=(G.gameDay||1)+1; newDayTick(); }
+        }
         updateHUD();
       }
     });
@@ -2588,6 +2658,7 @@ function battleWin(){
   if(BATTLE.elegantSale&&BATTLE.argsUsed<=2&&!BATTLE.voucherUsed){
     bani=Math.round(bani*1.5); xp=Math.round(xp*1.5);
     bonusMsg='\n🌟 VÂNZARE ELEGANTĂ! +50% bonus';
+    G.elegantSales=(G.elegantSales||0)+1;
   }
 
   // Voucher cost
@@ -2619,7 +2690,7 @@ function battleWin(){
   const npc=BATTLE.npcRef;
   G.npcConvinsi[client.id]=true;
   if(!npc.isLeg){ npc.interacted=true; if(npc.exclaim) npc.exclaim.setVisible(false); if(npc.nameTag) npc.nameTag.setVisible(false); }
-  saveGame();
+  saveGame(); checkAchievements(); updateLeaderboard();
 
   // Result screen
   $('bt-result-icon').textContent=client.legendary?'🏆':'🎉';
@@ -2670,16 +2741,19 @@ const STORE_HIRE = {
   mage:{label:'MagE',   color:'#ff6600', salariu:4500, comision:'3%', icon:'🟠', minNiv:10,
     desc:'Colosul digital. Totul, de la telefoane la electrocasnice.\nSalariu 4.500 RON/lună + 3% comision.\nClienți imposibili. Nivel 10+ recomandat.'},
   banca:{label:'BANCĂ',icon:'🏦', special:true,
-    desc:'Depune bani pentru dobândă 0.5%/lună.\nIa împrumut de până la 5x salariu lunar.\n(Funcționalitate completă — Phase 3)'},
+    desc:'Depune bani la bancă pentru dobândă 0.5%/lună.\nRetrage oricând. Împrumut până la 5× salariu, rată 10%/săptămână.'},
   cafenea:{label:'CAFENEA',icon:'☕', special:true,
-    desc:'Stai 2 minute și câștigi +25 Moral.\n(Click "Intră" pentru recuperare rapidă)'},
+    desc:'O cafea = +25 Moral și o pauză meritată.\n☕ Costă 15 RON.'},
   casa:{label:'ACASĂ',icon:'🏠', special:true,
-    desc:'Casa ta. Odihna completă refacce moralul la 100%.\n(Funcționalitate completă — Phase 3)'},
+    desc:'Casa ta. Odihna completă reface moralul la 100.\nGratuit — mergi acasă oricând ai nevoie.'},
+  agentie:{label:'AGENȚIE',icon:'🏢', special:true,
+    desc:'Investește în afaceri pentru venit pasiv zilnic.\nVenitul se creditează automat la fiecare zi in-game.'},
 };
 
 function openHireScreen(bld){
   const cfg=STORE_HIRE[bld.id];
   if(!cfg){ notify('Clădire momentan inaccesibilă.'); return; }
+  G.dialogActive=true;
 
   $('hire-title').textContent=cfg.icon+' '+cfg.label;
   $('hire-title').style.color=cfg.color||'#FFD600';
@@ -2694,6 +2768,19 @@ function openHireScreen(bld){
         <button class="hire-btn" onclick="doSpecialBuilding('cafenea')">☕ Bea o cafea (-15 RON / +25 Moral)</button>
         <button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>
       `;
+    } else if(bld.id==='casa'){
+      acts.innerHTML=`
+        <button class="hire-btn" onclick="doSpecialBuilding('casa')">🛏️ Odihnește-te (Moral → 100)</button>
+        <button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>
+      `;
+    } else if(bld.id==='banca'){
+      $('hire-screen').classList.remove('hidden');
+      openBankUI();
+      return;
+    } else if(bld.id==='agentie'){
+      $('hire-screen').classList.remove('hidden');
+      openAgentieUI();
+      return;
     } else {
       acts.innerHTML=`<button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>`;
     }
@@ -2762,11 +2849,210 @@ function doSwitchJob(newMagazin){
 function doSpecialBuilding(id){
   if(id==='cafenea'){
     if(G.bani<15){ notify('❌ Nu ai suficienți bani pentru o cafea! (15 RON)'); return; }
-    addBani(-15);
-    addMoral(25);
+    G.bani-=15; G.coffees=(G.coffees||0)+1;
+    addMoral(25); updateHUD(); saveGame(); checkAchievements();
     notify('☕ Cafea băută! -15 RON · +25 Moral');
     closeHireScreen();
+  } else if(id==='casa'){
+    G.moral=100; updateHUD(); saveGame(); checkAchievements();
+    notify('🏠 Odihnit! Moral refăcut la 100.');
+    closeHireScreen();
   }
+}
+
+// ─── BUSINESSES (venit pasiv) ─────────────────────────────────
+const BUSINESSES = {
+  cafenea_proprie:{label:'Cafenea proprie',  icon:'☕',cost:8000, income:150,desc:'Venit zilnic 150 RON'},
+  service_gsm:    {label:'Service GSM',      icon:'📱',cost:12000,income:280,desc:'Venit zilnic 280 RON'},
+  magazin_online: {label:'Magazin online',   icon:'💻',cost:25000,income:600,desc:'Venit zilnic 600 RON'},
+  vulcanizare:    {label:'Vulcanizare',       icon:'🚗',cost:18000,income:400,desc:'Venit zilnic 400 RON'},
+};
+
+function openAgentieUI(){
+  $('hire-title').textContent='🏢 AGENȚIE AFACERI';
+  $('hire-title').style.color='#8888ff';
+  const rows=Object.entries(BUSINESSES).map(([id,b])=>{
+    const owned=(G.afaceri||[]).includes(id);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:320px;padding:8px;border:1px solid ${owned?'#224422':'#222'};background:${owned?'#061406':'#0a0a0a'};margin:4px 0;font-family:VT323,monospace;font-size:16px">
+      <span>${b.icon} ${b.label}<br><span style="font-size:13px;color:#888">${b.desc}</span></span>
+      ${owned?'<span style="color:#00cc44;font-size:13px">✅ Deținut</span>':`<button class="hire-btn" style="font-size:5px;padding:7px 10px;flex-shrink:0" onclick="buyBusiness('${id}')">Cumpără<br>${numFmt(b.cost)} RON</button>`}
+    </div>`;
+  }).join('');
+  $('hire-body').innerHTML=`<div style="width:100%;display:flex;flex-direction:column;align-items:center">${rows}</div>`;
+  $('hire-actions').innerHTML=`<button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>`;
+}
+
+function buyBusiness(id){
+  const b=BUSINESSES[id]; if(!b) return;
+  if((G.afaceri||[]).includes(id)){ notify('Deja deținut!'); return; }
+  if(G.bani<b.cost){ notify('❌ Nevoie de '+numFmt(b.cost)+' RON!'); return; }
+  G.bani-=b.cost; G.afaceri.push(id);
+  updateHUD(); saveGame(); checkAchievements();
+  notify('🏪 Ai cumpărat '+b.label+'! Venit: +'+b.income+' RON/zi');
+  openAgentieUI();
+}
+
+// ─── BANK ────────────────────────────────────────────────────
+function openBankUI(){
+  $('hire-title').textContent='🏦 BANCĂ';
+  $('hire-title').style.color='#00cc44';
+  const sal=G.job?(STORE_HIRE[G.job]?.salariu||0):0;
+  const maxLoan=Math.max(5000,sal*5);
+  $('hire-body').innerHTML=`
+    <span style="font-family:VT323,monospace;font-size:18px">
+      💰 Bani la tine: <b style="color:#FFD600">${numFmt(G.bani)} RON</b><br>
+      🏦 Economii: <b style="color:#00cc44">${numFmt(G.savings||0)} RON</b> <span style="font-size:14px">(0.5%/lună dobândă)</span><br>
+      📋 Împrumut activ: <b style="color:${G.loan?'#ff6666':'#555'}">${numFmt(G.loan||0)} RON</b><br><br>
+      <span style="font-size:14px;color:#888">Împrumut disponibil: până la ${numFmt(maxLoan)} RON<br>Rată: 10% din sold/săptămână in-game.</span>
+    </span>`;
+  $('hire-actions').innerHTML=`
+    <input id="bank-amount" type="number" min="1" placeholder="Sumă RON"
+      style="width:130px;padding:9px;background:#111;color:#FFD600;border:2px solid #333;
+             font-family:'Press Start 2P',monospace;font-size:7px;text-align:center">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:6px">
+      <button class="hire-btn" onclick="bankDeposit()">Depune</button>
+      <button class="hire-btn" style="background:#003366;border-color:#0055cc" onclick="bankWithdraw()">Retrage</button>
+      ${!G.loan?`<button class="hire-btn" style="background:#440000;border-color:#880000;color:#ff8888" onclick="bankLoan()">Împrumut</button>`:''}
+    </div>
+    <button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>`;
+}
+
+function bankDeposit(){
+  const amt=parseInt($('bank-amount')?.value)||0;
+  if(amt<=0||amt>G.bani){ notify(amt<=0?'Sumă invalidă!':'❌ Nu ai '+numFmt(amt)+' RON!'); return; }
+  G.bani-=amt; G.savings=(G.savings||0)+amt;
+  updateHUD(); saveGame(); checkAchievements();
+  notify('🏦 Depus '+numFmt(amt)+' RON!');
+  openBankUI();
+}
+function bankWithdraw(){
+  const amt=parseInt($('bank-amount')?.value)||0;
+  if(amt<=0||amt>(G.savings||0)){ notify(amt<=0?'Sumă invalidă!':'❌ Economii insuficiente!'); return; }
+  G.savings-=amt; G.bani+=amt;
+  updateHUD(); saveGame();
+  notify('💰 Retras '+numFmt(amt)+' RON din bancă!');
+  openBankUI();
+}
+function bankLoan(){
+  const amt=parseInt($('bank-amount')?.value)||0;
+  const sal=G.job?(STORE_HIRE[G.job]?.salariu||0):0;
+  const maxLoan=Math.max(5000,sal*5);
+  if(amt<=0||amt>maxLoan){ notify('Sumă între 1 și '+numFmt(maxLoan)+' RON!'); return; }
+  if(G.loan){ notify('❌ Ai deja un împrumut activ!'); return; }
+  G.loan=amt; G.loanDay=G.gameDay; G.bani+=amt;
+  updateHUD(); saveGame();
+  notify('🏦 Împrumut: +'+numFmt(amt)+' RON! Rată ~'+numFmt(Math.round(amt*0.1))+' RON/săpt.');
+  openBankUI();
+}
+
+// ─── ACHIEVEMENTS ─────────────────────────────────────────────
+const ACHIEVEMENTS=[
+  {id:'first_sale', icon:'🎯',label:'Primul Client',      desc:'Convinge primul tău client'},
+  {id:'employed',   icon:'💼',label:'Angajat',            desc:'Obține primul job în retail'},
+  {id:'rich',       icon:'💰',label:'Om cu Bani',         desc:'Adună 10.000 RON'},
+  {id:'master',     icon:'🏆',label:'Maestru Vânzări',    desc:'Atinge nivelul 10'},
+  {id:'legendary',  icon:'🌟',label:'L-ai convins pe el!',desc:'Convinge un NPC legendar'},
+  {id:'elegant5',   icon:'✨',label:'Vânzător de Elită',  desc:'5 vânzări elegante (fără voucher, ≤2 arg)'},
+  {id:'banker',     icon:'🏦',label:'Bancher',            desc:'Depune 5.000 RON la bancă'},
+  {id:'business',   icon:'🏪',label:'Antreprenor',        desc:'Cumpără prima ta afacere'},
+  {id:'coffee10',   icon:'☕',label:'Cafeaua de Dimineață',desc:'Bea 10 cafele'},
+  {id:'veteran',    icon:'⭐',label:'Veteran',            desc:'Supraviețuiește 30 de zile in-game'},
+];
+
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(a=>{
+    if(G.achievements.includes(a.id)) return;
+    let ok=false;
+    if(a.id==='first_sale')  ok=Object.keys(G.npcConvinsi).length>=1;
+    if(a.id==='employed')    ok=!!G.job;
+    if(a.id==='rich')        ok=G.bani>=10000;
+    if(a.id==='master')      ok=G.nivel>=10;
+    if(a.id==='legendary')   ok=['vasile','cornelia','gigel','coste','elena'].some(n=>G.npcConvinsi[n]);
+    if(a.id==='elegant5')    ok=(G.elegantSales||0)>=5;
+    if(a.id==='banker')      ok=(G.savings||0)>=5000;
+    if(a.id==='business')    ok=(G.afaceri||[]).length>=1;
+    if(a.id==='coffee10')    ok=(G.coffees||0)>=10;
+    if(a.id==='veteran')     ok=(G.gameDay||1)>=30;
+    if(ok){ G.achievements.push(a.id); notify('🏆 '+a.label+' deblocat!'); }
+  });
+}
+
+function showAchievements(){
+  $('ach-list').innerHTML=ACHIEVEMENTS.map(a=>{
+    const u=G.achievements.includes(a.id);
+    return `<div class="ach-item ${u?'ach-unlocked':'ach-locked'}">
+      <div class="ach-icon">${u?a.icon:'🔒'}</div>
+      <div><div class="ach-name">${u?a.label:'???'}</div><div class="ach-desc">${u?a.desc:'Blocat'}</div></div>
+    </div>`;
+  }).join('');
+  $('achievements-screen').classList.remove('hidden');
+  G.dialogActive=true;
+}
+function closeAchievements(){
+  $('achievements-screen').classList.add('hidden');
+  G.dialogActive=false;
+}
+
+// ─── LEADERBOARD ─────────────────────────────────────────────
+const LB_KEY='rw_lb_v1';
+function updateLeaderboard(){
+  let lb; try{ lb=JSON.parse(localStorage.getItem(LB_KEY))||[]; }catch{ lb=[]; }
+  lb=lb.filter(e=>e.name!==G.name);
+  lb.push({name:G.name,nivel:G.nivel,bani:G.bani,day:G.gameDay||1});
+  lb.sort((a,b)=>b.bani-a.bani);
+  localStorage.setItem(LB_KEY,JSON.stringify(lb.slice(0,5)));
+}
+function showLeaderboard(){
+  let lb; try{ lb=JSON.parse(localStorage.getItem(LB_KEY))||[]; }catch{ lb=[]; }
+  const medals=['🥇','🥈','🥉','4️⃣','5️⃣'];
+  $('lb-list').innerHTML=lb.length?lb.map((e,i)=>`
+    <div class="lb-row">
+      <span>${medals[i]||'·'} ${e.name}</span>
+      <span style="text-align:right">Niv.${e.nivel}<br>${numFmt(e.bani)} RON</span>
+    </div>`).join('')
+    :'<div style="color:#444;font-family:VT323,monospace;font-size:18px;padding:20px">Nicio intrare. Fii primul!</div>';
+  $('leaderboard-screen').classList.remove('hidden');
+  G.dialogActive=true;
+}
+function closeLeaderboard(){
+  $('leaderboard-screen').classList.add('hidden');
+  G.dialogActive=false;
+}
+
+// ─── NEW DAY TICK ─────────────────────────────────────────────
+function newDayTick(){
+  // Auto-salary (zilnic, proporțional: salariu/30)
+  if(G.job && G.lastSalaryDay!==G.gameDay){
+    G.lastSalaryDay=G.gameDay;
+    const cfg=STORE_HIRE[G.job];
+    if(cfg?.salariu){
+      const daily=Math.round(cfg.salariu/30);
+      G.bani+=daily; updateHUD();
+      notify('💼 Salariu zilnic: +'+numFmt(daily)+' RON ('+cfg.label+')');
+    }
+  }
+  // Reset șef calls
+  G.sefCallsToday=0;
+  // Dobândă bancă (lunar = fiecare 30 zile)
+  if((G.savings||0)>0 && G.gameDay%30===0){
+    const interest=Math.round(G.savings*0.005);
+    if(interest>0){ G.savings+=interest; G.bani+=interest; updateHUD(); notify('🏦 Dobândă bancă: +'+numFmt(interest)+' RON!'); }
+  }
+  // Rată împrumut (săptămânal = fiecare 7 zile)
+  if((G.loan||0)>0 && G.gameDay%7===0){
+    const weekly=Math.round(G.loan*0.1);
+    if(G.bani>=weekly){ G.bani-=weekly; G.loan=Math.max(0,G.loan-weekly); updateHUD(); notify('🏦 Rată împrumut: -'+numFmt(weekly)+' RON'); }
+    else { notify('⚠️ Nu ai bani pentru rata împrumutului! Moral -5'); addMoral(-5); }
+    if(G.loan<=0){ G.loan=0; notify('🎉 Împrumut achitat complet!'); }
+  }
+  // Venit pasiv din afaceri
+  if((G.afaceri||[]).length){
+    const income=(G.afaceri||[]).reduce((s,id)=>s+(BUSINESSES[id]?.income||0),0);
+    if(income>0){ G.bani+=income; updateHUD(); notify('📈 Venit pasiv: +'+numFmt(income)+' RON'); }
+  }
+  checkAchievements();
+  saveGame();
+  updateLeaderboard();
 }
 
 function closeHireScreen(){
