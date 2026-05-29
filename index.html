@@ -236,7 +236,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action
   background:rgba(0,0,0,0.92);border:2px solid #E30613;
   padding:6px 14px;
   font-family:'Press Start 2P',monospace;font-size:6px;
-  color:#FFD600;z-index:700;pointer-events:none;
+  color:#FFD600;z-index:1010;pointer-events:none;
   opacity:0;transition:opacity 0.3s;white-space:nowrap;
   border-radius:2px;
 }
@@ -315,7 +315,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action
 .bt-menu-zone{
   flex:1;padding:8px 10px;
   display:flex;flex-direction:column;gap:6px;
-  overflow:hidden;
+  overflow-y:auto;touch-action:pan-y;
+  -webkit-overflow-scrolling:touch;
 }
 #bt-prompt{font-size:7px;color:#FFD600;margin-bottom:4px;}
 #bt-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
@@ -411,8 +412,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action
   position:fixed;top:0;left:0;right:0;bottom:160px;z-index:860;
   background:rgba(0,0,0,0.97);
   display:flex;flex-direction:column;align-items:center;
-  gap:8px;padding:18px 14px 12px;overflow-y:auto;
+  gap:0;padding:0;overflow:hidden;
   font-family:'Press Start 2P',monospace;
+}
+.ov-header{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;background:#0a0a18;border-bottom:2px solid #1a1a2a;
+  flex-shrink:0;
+}
+.ov-scroll{
+  flex:1;width:100%;overflow-y:auto;touch-action:pan-y;
+  -webkit-overflow-scrolling:touch;
+  display:flex;flex-direction:column;align-items:center;
+  padding:10px 14px 20px;gap:6px;
 }
 .ach-title,.lb-title{font-size:9px;color:#FFD600;text-align:center;margin-bottom:8px;}
 .ach-item{
@@ -599,16 +611,24 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action
 
 <!-- ACHIEVEMENTS SCREEN -->
 <div id="achievements-screen" class="hidden">
-  <div class="ach-title">🏆 REALIZĂRILE TALE</div>
-  <div id="ach-list" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:6px;padding-bottom:16px"></div>
-  <button class="hire-btn-cancel" style="flex-shrink:0" onclick="closeAchievements()">← Înapoi</button>
+  <div class="ov-header">
+    <span style="font-size:8px;color:#FFD600">🏆 REALIZĂRI</span>
+    <button class="hire-btn-cancel" style="padding:6px 14px;font-size:7px" onclick="closeAchievements()">✕ ÎNCHIDE</button>
+  </div>
+  <div class="ov-scroll">
+    <div id="ach-list" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:6px"></div>
+  </div>
 </div>
 
 <!-- LEADERBOARD SCREEN -->
 <div id="leaderboard-screen" class="hidden">
-  <div class="lb-title">🥇 CLASAMENT LOCAL</div>
-  <div id="lb-list" style="width:100%;display:flex;flex-direction:column;align-items:center;padding-bottom:16px"></div>
-  <button class="hire-btn-cancel" style="flex-shrink:0" onclick="closeLeaderboard()">← Înapoi</button>
+  <div class="ov-header">
+    <span style="font-size:8px;color:#FFD600">🥇 CLASAMENT</span>
+    <button class="hire-btn-cancel" style="padding:6px 14px;font-size:7px" onclick="closeLeaderboard()">✕ ÎNCHIDE</button>
+  </div>
+  <div class="ov-scroll">
+    <div id="lb-list" style="width:100%;display:flex;flex-direction:column;align-items:center"></div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
@@ -1288,6 +1308,7 @@ class WorldScene extends Phaser.Scene {
     setLoad('Sprite-uri personaje...', 75);
 
     // ── Physics ───────────────────────────────────────────────
+    this.physics.world.setBounds(0, 0, WORLD_W, WORLD_H);
     this.walls=this.physics.add.staticGroup();
     this.addWalls();
 
@@ -2151,26 +2172,36 @@ const STORE_ARGS = {
       {text:'La Flanco ai 45 zile retur — de 3 ori mai mult ca alții.',  keyword:'45 zile'},
       {text:'Oney: 3-4 rate fără dobândă, prima acum, suma 500–2500 RON.',  keyword:'oney'},
       {text:'Garanția Extinsă Flanco: 1-2 ani extra față de lege.',       keyword:'garanție extinsă'},
+      {text:'Prețul include servicii gratuite: livrare + instalare la domiciliu.', keyword:'instalare'},
+      {text:'Plata în rate Oney, aprobată în 5 minute pe telefon.',        keyword:'rate oney'},
     ],
     calitate:[
       {text:'Garanție legală 2 ani — service gestionat direct de Flanco.',keyword:'garanție'},
       {text:'Reparație electrocasnice mari la domiciliu, vin tehnicieni.', keyword:'reparație acasă'},
       {text:'Produsul are certificare CE — standard european obligatoriu.',keyword:'certificare'},
+      {text:'Toate produsele vin verificate și testate înainte de livrare.',keyword:'verificat'},
+      {text:'Service autorizat Flanco — nu trimiți produsul undeva necunoscut.',keyword:'service autorizat'},
     ],
     comparatie:[
-      {text:'45 zile retur față de 14 Altex — 3 luni să testezi acasă.',  keyword:'45 zile'},
+      {text:'45 zile retur față de 14 Altex — testezi fără griji acasă.',  keyword:'45 zile'},
       {text:'Aduci produsul defect la noi în magazin, nu cauți tu service.',keyword:'service'},
       {text:'Livrare gratuită de la 200 lei sau ridici gratis din magazin.',keyword:'livrare'},
+      {text:'45 zile retur vs 30 eMAG — Flanco bate și colosul digital.',  keyword:'retur flanco'},
+      {text:'Personalul nostru cunoaște fiecare produs — nu chatbot, om real.',keyword:'personal'},
     ],
     incredere:[
       {text:'Returnezi 45 zile fără întrebări — testezi liniștit acasă.',  keyword:'retur'},
       {text:'Garanția gestionată intern: tu aduci, noi rezolvăm.',         keyword:'garanție'},
-      {text:'Oney: 3-4 rate, prima plătită acum — aprovare în 5 min pe telefon.',keyword:'oney'},
+      {text:'Oney: 3-4 rate, prima plătită acum — aprobare în 5 min.',     keyword:'oney'},
+      {text:'Flanco activă de 30 de ani pe piața românească — ne cunoști.', keyword:'experiență'},
+      {text:'Recenzii verificate pe site — transparență totală înainte de cumpărare.',keyword:'recenzii'},
     ],
     urgenta:[
       {text:'E în stoc acum — pregătim factura și pleci în 10 minute.',   keyword:'stoc'},
       {text:'Ridicare imediată din magazin — zero așteptare curier.',      keyword:'ridicare'},
       {text:'Plată în rate aprobată instant, pleci azi cu produsul.',      keyword:'rate instant'},
+      {text:'Dacă comanzi acum înainte de 14:00, ai livrare azi.',        keyword:'livrare azi'},
+      {text:'Stocul e limitat — am verificat acum, mai sunt 2 bucăți.',   keyword:'stoc limitat'},
     ]
   },
   atexl:{
@@ -2178,26 +2209,36 @@ const STORE_ARGS = {
       {text:'2× Diferența: dacă găsești mai ieftin, plătim DUBLU diferența.',keyword:'2x diferența'},
       {text:'Rate prin Credex IFN — aprobare directă la raft, fără bancă.',  keyword:'credex'},
       {text:'Cel mai mic preț garantat matematic prin politica noastră.',     keyword:'preț garantat'},
+      {text:'Program Fidelitate Altex: puncte la fiecare cumpărare, reduceri la retur.',keyword:'fidelitate'},
+      {text:'Altex Club: membri primesc prețuri speciale și acces early deals.',keyword:'altex club'},
     ],
     calitate:[
       {text:'Extragaranție Altex: 1-2 ani extra față de garanția legală.',    keyword:'extragaranție'},
       {text:'Produsul are certificare CE și garantăm conformitatea.',          keyword:'certificare'},
       {text:'Dacă se strică în garanție, îl înlocuim sau rambursăm.',         keyword:'înlocuire'},
+      {text:'Testăm produsele returnate — nu vindem defecte drept noi.',      keyword:'testare'},
+      {text:'Service autorizat Altex cu piese originale de la producător.',    keyword:'piese originale'},
     ],
     comparatie:[
       {text:'2× Diferența — imposibil să găsești mai ieftin și să pierzi.',   keyword:'2x'},
       {text:'Rezervă online, ridici instant din magazin — fără livrare.',      keyword:'rezervă ridică'},
       {text:'Credex IFN la raft — rate fără card bancar, aprobare 2 minute.',  keyword:'credex'},
+      {text:'Extragaranție Altex bate garanția standard Flanco sau eMAG.',     keyword:'extragaranție vs'},
+      {text:'Altex: cea mai mare rețea fizică din România — 100+ magazine.',   keyword:'rețea'},
     ],
     incredere:[
       {text:'Garanție 2 ani + Extragaranție pentru protecție totală.',        keyword:'garanție'},
       {text:'2× Diferența — niciodată nu plătești mai mult decât piața.',     keyword:'preț'},
       {text:'Retur 14 zile în stare originală conform legii consumatorului.',  keyword:'retur'},
+      {text:'Altex.ro: peste 3 milioane de clienți activi — nu ești primul.', keyword:'clienți'},
+      {text:'Vânzători certificați — fiecare cunoaște produsul înainte să-l recomande.',keyword:'certificat'},
     ],
     urgenta:[
       {text:'Rezervi online acum, ridici în 30 minute din magazin.',          keyword:'rezervare'},
       {text:'Credex aprobat în 2 minute la casă — pleci cu produsul azi.',    keyword:'credex rapid'},
       {text:'E în stoc confirmat — verificat în timp real pe platformă.',     keyword:'stoc'},
+      {text:'Comandă acum și îl ai în magazin în maximum 2 ore.',             keyword:'2 ore'},
+      {text:'Promoția expiră azi la miezul nopții — prețul crește mâine.',    keyword:'promoție expira'},
     ]
   },
   mage:{
@@ -2205,33 +2246,45 @@ const STORE_ARGS = {
       {text:'Genius: livrare gratuită + 60 zile retur pentru abonați.',       keyword:'genius'},
       {text:'Rate eMAG Wallet: până la 12 rate din contul tău, fără bancă.',  keyword:'wallet'},
       {text:'3 milioane produse — cel mai mic preț prin competiție reală.',   keyword:'3 milioane'},
+      {text:'eMAG compară prețuri în timp real — dacă e mai ieftin îl afișăm.',keyword:'comparare preț'},
+      {text:'Genius Gold: cashback 5% la orice comandă peste 500 RON.',       keyword:'cashback genius'},
     ],
     calitate:[
       {text:'Garanție Plus eMAG: 1-2 ani extra, gestionat 100% digital.',    keyword:'garanție plus'},
       {text:'Recenzii verificate de cumpărători reali — transparență totală.',keyword:'recenzii'},
       {text:'Returnezi simplu prin EasyBox — fără explicații, fără curieri.',  keyword:'easybox'},
+      {text:'Produse verificate eMAG: 0% defecte la livrare sau schimb gratis.',keyword:'verificat emag'},
+      {text:'Raport detaliat calitate produs disponibil la fiecare listing.',  keyword:'raport calitate'},
     ],
     comparatie:[
       {text:'30 zile retur standard; 60 zile Genius — dublu față de Altex.',  keyword:'60 zile'},
       {text:'Instant Money Back: banii pe card în 30 minute, nu 5-7 zile.',   keyword:'instant money'},
       {text:'EasyBox 24/7 lângă tine — returnezi la 3 noaptea, zero stres.',  keyword:'easybox'},
+      {text:'eMAG: 3M+ produse vs 100k Flanco — găsești garantat ce cauți.',  keyword:'produse emag'},
+      {text:'Livrare gratuită Genius vs 200 lei minim Flanco/Altex.',         keyword:'livrare genius'},
     ],
     incredere:[
       {text:'Instant Money Back — banii înapoi în MAX 30 minute după retur.', keyword:'30 minute'},
       {text:'EasyBox 24/7: scanezi QR, pui produsul, banii vin singuri.',     keyword:'easybox'},
       {text:'Genius: 60 zile retur + livrare gratuită nelimitată.',           keyword:'genius'},
+      {text:'eMAG activ de 24 de ani — cel mai de încredere retailer digital.',keyword:'24 ani'},
+      {text:'Protecție cumpărător 100% — dacă nu ești mulțumit, rezolvăm.',   keyword:'protecție'},
     ],
     urgenta:[
       {text:'Livrare aceeași zi sau a doua zi — cea mai rapidă din piață.',   keyword:'livrare rapidă'},
       {text:'Ridici de la EasyBox în 2 ore după comandă, 24/7.',              keyword:'easybox rapid'},
       {text:'Plată instant prin eMAG Wallet — fără card fizic, fără bancă.',  keyword:'wallet instant'},
+      {text:'Same-day delivery București: comandă până la 15:00, primești azi.',keyword:'same day'},
+      {text:'Stoc actualizat la minut — nu mai cauți, e confirmat disponibil.',keyword:'stoc live'},
     ]
   }
 };
 function getArgs(obiectieType){
   const mag=G.job||G.magazin;
   const store=STORE_ARGS[mag]||STORE_ARGS.flanco;
-  return store[obiectieType]||store.pret;
+  const all=store[obiectieType]||store.pret;
+  // Shuffle all and return 3 — different each time
+  return [...all].sort(()=>Math.random()-0.5).slice(0,3);
 }
 
 // ─── Draw sprites on canvas elements ────────────────────────────
@@ -2593,19 +2646,27 @@ function confirmVoucher(){
 
 // Sună Șeful
 function bSunaSeful(){
+  if(!G.job){
+    setBattlePrompt('❌ Fără job nu ai un șef!');
+    typeText('bc-dialog-txt','N-auzi că nu ești de la nicio firmă?',30,null);
+    setTimeout(()=>{ showBattleActions(true); setBattlePrompt('Ce faci?'); },1800);
+    return;
+  }
   if(G.sefCallsToday>=3){
-    notify('📞 Șeful e ocupat — ai sunat de 3 ori azi!');
-    showBattleActions(true); return;
+    setBattlePrompt('📞 Șeful e ocupat! (3/3 apeluri)');
+    typeText('bc-dialog-txt','Nu mai stau să aștept...',30,null);
+    setTimeout(()=>{ showBattleActions(true); setBattlePrompt('Ce faci?'); },1800);
+    return;
   }
   BATTLE.elegantSale=false; BATTLE.sefCallsInBattle++;
   G.sefCallsToday++;
-  setBattlePrompt('📞 Suni la șef...');
+  setBattlePrompt('📞 Suni la șef... (-'+( BATTLE.sefCallsInBattle>1?20:10)+' Moral)');
   const moralCost=BATTLE.sefCallsInBattle>1?20:10;
   BATTLE.playerMoral=Math.max(0,BATTLE.playerMoral-moralCost);
   G.moral=BATTLE.playerMoral; updateBattleMoral(); updateHUD();
 
   setTimeout(()=>{
-    applyDamageToClient(45, 'Bine... dacă șeful zice...');
+    applyDamageToClient(45, 'Bine... dacă șeful tău zice...');
     $('battle-voucher-info').textContent='Voucher: '+(BATTLE.voucherUsed?'DA':'NU')+'  |  Sună Șeful: '+(3-G.sefCallsToday)+'/3 rămase';
   },1200);
 }
