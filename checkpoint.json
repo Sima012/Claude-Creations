@@ -1,0 +1,68 @@
+{
+  "project": "Retail Wars: România",
+  "checkpoint": "phase3-v1",
+  "date": "2026-05-27",
+  "file": "index.html",
+  "engine": "Phaser 3.70 CDN",
+  "groq_model": "llama-3.3-70b-versatile",
+
+  "status": {
+    "character_creation": "✅ GATA — Pas 1 (Nume + Gen + Aspect), Pas 2 (Magazin: Flanco/Atexl/MagE), Pas 3 (Intro typing effect)",
+    "world_map": "✅ GATA — Tilemap procedural 80x60 (1280x960px), 6 tipuri tile, drumuri, parcare, apă, 10 clădiri",
+    "player_movement": "✅ GATA — Phaser arcade physics, touch D-pad + keyboard, 4 direcții, animații walk procedurale, swipe slide fără ridicat degetul",
+    "camera": "✅ GATA — Urmărește playerul, deadzone, bounds la world",
+    "buildings": "✅ GATA — 10 clădiri desenate procedural cu windows/uși, etichete, zone de intrare",
+    "npcs": "✅ GATA — 5 legendari (Vasile/Cornelia/Gigel/Coste/Elena) + 24 random, patrulare, exclamații",
+    "dialog_system": "✅ GATA — Typing effect, choices A/B/C, Groq API cu fallback",
+    "groq_api": "✅ GATA — POST la Groq cu timeout 4.5s, fallback per personalitate, RETAIL_FACTS injectat în fiecare prompt",
+    "save_system": "✅ GATA — localStorage, autosave 60s, continuă/joc nou, toate câmpurile noi salvate",
+    "hud": "✅ GATA — Nume, nivel, bani, moral bar, ora + badge job",
+    "minimap": "✅ GATA — 66x50px colț dreapta sus, clădiri colorate, player dot pulsant",
+    "collision": "✅ GATA — Clădiri + apă = collidable, player nu trece prin ele",
+    "notifications": "✅ GATA — Toast notifications cu auto-dismiss 2.4s",
+    "battle_system": "✅ GATA — Turn-based HTML overlay, HP bars Pokemon-style, 5 acțiuni, timer countdown per nivel, anger system 😐→🤬, rage-quit la anger≥3",
+    "demo_minigame": "✅ GATA — Mini-joc Demonstrează: alegi 3 caracteristici corecte din 6, timer 8s, feature-uri fixate per battle",
+    "voucher_system": "✅ GATA — Slider voucher 5-30%, preview preț în timp real, penalizare moral dacă pierzi",
+    "employment_system": "✅ GATA — Angajare la Flanco/Atexl/MagE, schimbare job, demisie, salariu zilnic AUTO-CREDITAT la fiecare zi in-game",
+    "legendary_npcs": "✅ GATA — 5 legendari cu weaknesses unice",
+    "shop_interiors": "✅ GATA — ShopInteriorScene (640x416px), rafturi procedurale, 4-6 clienți indoor, manager NPC, comision diferit indoor_own vs indoor_other",
+    "battle_timer": "✅ GATA — 60s→55s→50s→45s→35s→25s→20s (la fiecare 5 nivele), timer vizibil cu bară colorată",
+    "anger_system": "✅ GATA — Clientul se enervează la argumente greșite, rage-quit la anger≥3",
+    "location_commission": "✅ GATA — indoor_own +50% comision, indoor_other bacșiș 60-150 RON, outdoor no-job bacșiș 5-20 RON",
+    "retail_facts": "✅ GATA — RETAIL_FACTS cu date reale 2025 per magazin, injectat în Groq system prompt",
+    "bank_system": "✅ GATA — Depune/retrage economii, dobândă 0.5%/lună, împrumut până la 5× salariu cu rată 10%/săptămână",
+    "casa_rest": "✅ GATA — Odihnă la Acasă: Moral → 100, gratuit",
+    "passive_income": "✅ GATA — Afaceri cumpărabile din Agenție (4 tipuri), venit pasiv auto-creditat zilnic",
+    "achievements": "✅ GATA — 10 realizări cu UI dedicat (buton 🏆 în D-pad + menu principal)",
+    "leaderboard": "✅ GATA — Top 5 local în localStorage, actualizat la fiecare victorie + zi nouă (buton 🥇)",
+    "new_day_tick": "✅ GATA — newDayTick(): salariu auto, reset sefCallsToday, dobândă bancă, rată împrumut, venit pasiv, achievements check"
+  },
+
+  "tech_notes": {
+    "groq_key": "PUNE_CHEIA_GROQ_AICI — nu commit în git! Inserează manual după clone.",
+    "battle_architecture": "HTML overlay (#battle-screen), nu Phaser Scene. BATTLE obiect global cu tot state-ul. startBattle(npcRef, worldScene, location) pornește din talkToNPC() sau ShopInteriorScene.",
+    "hire_architecture": "HTML overlay (#hire-screen). openHireScreen(bld) pornit din enterBuilding(). Job stocat în G.job + G.jobSince (gameDay). G.dialogActive=true setat la intrare.",
+    "bank_architecture": "openBankUI() modifică conținutul hire-screen în loc să creeze un nou overlay. Câmpuri G: savings, loan, loanDay.",
+    "achievements_architecture": "HTML overlay (#achievements-screen). ACHIEVEMENTS array cu check-uri. checkAchievements() apelat din battleWin, newDayTick, bankDeposit, buyBusiness, doSpecialBuilding.",
+    "leaderboard_architecture": "localStorage key 'rw_lb_v1', top 5 sortat după bani. updateLeaderboard() apelat din newDayTick și battleWin.",
+    "new_day_detection": "Clock tick: gameHour=(gameHour-8+1)%12+8. Dacă newHour < oldHour → zi nouă → gameDay++ → newDayTick().",
+    "salary_formula": "Math.round(salariu/30) RON/zi. Flanco=100/zi, Atexl=117/zi, MagE=150/zi. Guard: lastSalaryDay !== gameDay.",
+    "passive_income": "BUSINESSES map cu 4 tipuri. G.afaceri=[] array cu id-uri deținute. Venit cumulat la newDayTick.",
+    "damage_formula": "base=15+G.persuasiune*3, weakness 3x, elegantSale bonus +50% la win dacă: fără voucher, ≤2 args, fără sefCall",
+    "demo_products": "STORE_CFG[magazin].products = array de {name,features:[{t,ok}]}. Client alege random 1 produs, jucătorul selectează 3 features corecte din 6.",
+    "file_lines": "~3108 linii la checkpoint phase3-v1",
+    "known_issues": [
+      "Texturile NPC se generează o dată la spawn — 1 frame static",
+      "Entry zone clădiri approximate — nu pixel-perfect la ușă",
+      "Groq latency 1-2s pe rețele slabe — fallback hardcodat per personalitate",
+      "Leaderboard local per dispozitiv — nu online/shared"
+    ]
+  },
+
+  "deployment": {
+    "github_pages": "Activează Settings → Pages → Branch: main, folder: / (root). Accesibil la https://sima012.github.io/claude-creations/",
+    "custom_domain": "În Settings → Pages → Custom domain: baiatul-cu-it.ro/retailwars (necesită CNAME record la hostico)",
+    "groq_key_insertion": "Deschide index.html, caută PUNE_CHEIA_GROQ_AICI, înlocuiește cu cheia ta (fake sau reală). NU commit cheia în git.",
+    "hostico_upload": "FTP la hostico: upload index.html în public_html/retailwars/. Accesibil la baiatul-cu-it.ro/retailwars"
+  }
+}

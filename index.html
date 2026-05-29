@@ -1,0 +1,3169 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Retail Wars: România</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;touch-action:none;}
+
+#wrapper{
+  width:100%;max-width:480px;height:100%;
+  display:flex;flex-direction:column;
+  margin:0 auto;overflow:hidden;position:relative;
+}
+
+/* ─── HUD ─────────────────────────────── */
+#hud{
+  height:44px;background:#1a1a2e;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 8px;z-index:100;flex-shrink:0;
+  border-bottom:2px solid #2a2a4a;
+}
+.hud-item{display:flex;flex-direction:column;align-items:center;gap:1px;}
+.hud-lbl{font-family:'Press Start 2P',monospace;font-size:4px;color:#555;letter-spacing:0.5px;}
+.hud-val{font-family:'Press Start 2P',monospace;font-size:8px;color:#FFD600;
+  text-shadow:0 0 8px rgba(255,214,0,0.4);}
+.hud-bar{width:48px;height:6px;background:#222;border:1px solid #444;overflow:hidden;}
+.hud-bar-fill{height:100%;transition:width 0.4s;}
+#moral-fill{background:linear-gradient(90deg,#0055bb,#33aaff);}
+
+/* ─── PHASER CANVAS CONTAINER ─────────── */
+#phaser-container{
+  flex:1;width:100%;overflow:hidden;
+  touch-action:none;position:relative;
+  min-height:0;
+}
+#phaser-container canvas{
+  display:block;image-rendering:pixelated;
+  width:100%!important;height:100%!important;
+}
+
+/* ─── CONTROLS ─────────────────────────── */
+#controls{
+  height:160px;background:#0d0d0d;
+  display:flex;align-items:flex-end;justify-content:space-between;
+  padding:10px 16px 18px;flex-shrink:0;
+  border-top:2px solid #1a1a1a;
+  position:relative;z-index:920;
+}
+.dpad{
+  display:grid;
+  grid-template-columns:repeat(3,46px);
+  grid-template-rows:repeat(3,46px);
+  gap:2px;
+}
+.dp{
+  background:rgba(255,255,255,0.07);
+  border:2px solid rgba(255,255,255,0.12);
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;cursor:pointer;user-select:none;
+  transition:background 0.08s,border-color 0.08s;
+}
+.dp:active,.dp.on{background:rgba(227,6,19,0.35);border-color:#E30613;}
+.dp-empty{opacity:0;pointer-events:none;}
+.action-btns{display:flex;gap:10px;align-items:center;padding-bottom:8px;}
+.abtn{
+  width:58px;height:58px;border-radius:50%;
+  border:3px solid;
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;cursor:pointer;user-select:none;
+  font-family:'Press Start 2P',monospace;font-size:7px;
+  transition:transform 0.08s;
+}
+.abtn:active,.abtn.on{transform:scale(0.87);}
+.btn-a{background:rgba(0,190,75,0.15);border-color:#00be4b;color:#00be4b;}
+.btn-b{background:rgba(227,6,19,0.15);border-color:#E30613;color:#E30613;}
+.btn-select{
+  width:44px;height:22px;border-radius:11px;
+  border:2px solid #333;background:rgba(255,255,255,0.05);
+  font-family:'Press Start 2P',monospace;font-size:4px;color:#555;
+  cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:center;
+}
+
+/* ─── OVERLAYS ─────────────────────────── */
+.ov{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  z-index:500;padding:20px;
+}
+.hidden{display:none!important;}
+
+/* ─── MENU ─────────────────────────────── */
+#menu-screen{
+  background:radial-gradient(ellipse at 50% 30%,#1a0a3e 0%,#0a0018 70%);
+}
+.logo-main{
+  font-family:'Press Start 2P',monospace;
+  font-size:10px;color:#FFD600;
+  text-shadow:3px 3px 0 #664400,0 0 40px rgba(255,214,0,0.6);
+  text-align:center;line-height:2;margin-bottom:6px;
+  animation:logoPulse 2s ease-in-out infinite alternate;
+}
+@keyframes logoPulse{
+  from{text-shadow:3px 3px 0 #664400,0 0 15px rgba(255,214,0,0.3);}
+  to{text-shadow:3px 3px 0 #664400,0 0 55px rgba(255,214,0,1);}
+}
+.logo-sub{
+  font-family:'Press Start 2P',monospace;font-size:5px;
+  color:#ff8888;text-align:center;line-height:2;margin-bottom:28px;
+}
+.pixel-hero{font-size:56px;margin-bottom:20px;animation:heroFloat 3s ease-in-out infinite;}
+@keyframes heroFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.mbtn{
+  background:#E30613;color:white;
+  border:3px solid #FFD600;padding:13px 26px;
+  font-family:'Press Start 2P',monospace;font-size:9px;
+  cursor:pointer;margin:5px;
+  box-shadow:4px 4px 0 #7a0008,0 0 20px rgba(227,6,19,0.3);
+  transition:transform 0.1s,box-shadow 0.1s;
+}
+.mbtn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #7a0008;}
+.mbtn-sec{
+  background:transparent;color:#FFD600;
+  border:2px solid #FFD600;padding:9px 18px;
+  font-family:'Press Start 2P',monospace;font-size:7px;
+  cursor:pointer;margin:4px;
+}
+.version-tag{font-family:'Press Start 2P',monospace;font-size:4px;color:#2a2a4a;margin-top:18px;}
+
+/* ─── CHAR CREATE ───────────────────────── */
+#char-screen{
+  background:#080812;justify-content:flex-start;
+  padding-top:16px;overflow-y:auto;gap:0;
+}
+.step-hdr{
+  font-family:'Press Start 2P',monospace;font-size:7px;
+  color:#FFD600;margin-bottom:12px;text-align:center;
+}
+.step-sub{
+  font-family:'Press Start 2P',monospace;font-size:4px;
+  color:#666;margin-bottom:18px;text-align:center;line-height:2;
+}
+#name-inp{
+  background:#111;border:3px solid #FFD600;
+  color:#FFD600;font-family:'Press Start 2P',monospace;
+  font-size:13px;padding:10px;width:100%;max-width:280px;
+  text-align:center;margin-bottom:14px;outline:none;
+}
+.gender-row{display:flex;gap:14px;margin-bottom:20px;}
+.gcard{
+  background:#1a1a2e;border:3px solid #333;
+  padding:14px 20px;cursor:pointer;text-align:center;
+  transition:border-color 0.15s,background 0.15s;border-radius:4px;
+  font-family:'Press Start 2P',monospace;
+}
+.gcard.sel{border-color:#FFD600;background:#1a1a40;}
+.gcard .gico{font-size:32px;display:block;margin-bottom:6px;}
+.gcard .glbl{font-size:5px;color:#aaa;}
+.app-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:10px;width:100%;max-width:300px;margin-bottom:14px;
+}
+.acard{
+  background:#111;border:3px solid #333;
+  padding:10px;cursor:pointer;text-align:center;
+  transition:border-color 0.15s;border-radius:4px;
+}
+.acard.sel{border-color:#FFD600;background:#0a0a22;}
+.acard canvas{display:block;margin:0 auto 6px;image-rendering:pixelated;}
+.acard .albl{font-family:'Press Start 2P',monospace;font-size:4px;color:#888;}
+.store-list{display:flex;flex-direction:column;gap:8px;width:100%;max-width:340px;}
+.scard{
+  border:3px solid #333;padding:12px;cursor:pointer;
+  display:flex;align-items:center;gap:10px;
+  transition:border-color 0.15s,background 0.15s;
+  background:#0d0d1a;
+}
+.scard.sel{border-color:#FFD600;background:#111128;}
+.scard-ico{font-size:26px;flex-shrink:0;}
+.scard-info .sname{font-family:'Press Start 2P',monospace;font-size:7px;margin-bottom:5px;}
+.scard-info .sdesc{font-family:'VT323',monospace;font-size:15px;color:#888;line-height:1.4;}
+.cfm-btn{
+  background:#007733;color:white;border:3px solid #00cc55;
+  padding:12px 26px;font-family:'Press Start 2P',monospace;font-size:8px;
+  cursor:pointer;margin-top:14px;box-shadow:3px 3px 0 #003311;
+  transition:transform 0.1s;
+}
+.cfm-btn:active{transform:translate(2px,2px);}
+.back-btn{
+  background:transparent;color:#555;border:2px solid #333;
+  padding:9px 18px;font-family:'Press Start 2P',monospace;font-size:6px;
+  cursor:pointer;margin-top:14px;
+}
+.intro-text{
+  font-family:'VT323',monospace;font-size:18px;
+  color:#eee;line-height:1.8;text-align:center;
+  max-width:320px;min-height:130px;margin:10px 0;
+}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+.cursor::after{content:'▌';animation:blink 0.7s step-end infinite;}
+
+/* ─── DIALOG BOX ─────────────────────────── */
+#dialog-box{
+  position:fixed;
+  left:50%;transform:translateX(-50%);
+  width:calc(100% - 16px);max-width:464px;
+  bottom:170px;
+  background:rgba(0,0,0,0.95);
+  border:3px solid #FFD600;
+  padding:10px 12px;z-index:600;
+}
+#dlg-speaker{font-family:'Press Start 2P',monospace;font-size:6px;color:#FFD600;margin-bottom:6px;}
+#dlg-text{font-family:'VT323',monospace;font-size:19px;color:white;line-height:1.4;min-height:42px;}
+#dlg-choices{margin-top:8px;display:flex;flex-direction:column;gap:4px;}
+.dchoice{
+  background:#111;border:2px solid #333;
+  padding:7px 10px;
+  font-family:'VT323',monospace;font-size:17px;
+  color:#ccc;cursor:pointer;text-align:left;
+  transition:border-color 0.1s,color 0.1s;
+}
+.dchoice:active,.dchoice:hover{border-color:#FFD600;color:#FFD600;}
+#dlg-continue{
+  font-family:'Press Start 2P',monospace;font-size:5px;
+  color:#555;text-align:right;margin-top:6px;
+  animation:blink 1s step-end infinite;
+}
+
+/* ─── NOTIFICATION ────────────────────── */
+#notif{
+  position:fixed;top:52px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,0.92);border:2px solid #E30613;
+  padding:6px 14px;
+  font-family:'Press Start 2P',monospace;font-size:6px;
+  color:#FFD600;z-index:1010;pointer-events:none;
+  opacity:0;transition:opacity 0.3s;white-space:nowrap;
+  border-radius:2px;
+}
+
+/* ─── LOADING ─────────────────────────── */
+#loading-screen{
+  background:#080812;
+  font-family:'Press Start 2P',monospace;
+  font-size:8px;color:#FFD600;
+  flex-direction:column;gap:16px;
+}
+.load-bar-wrap{width:200px;height:10px;background:#222;border:2px solid #444;}
+.load-bar-fill{height:100%;background:#E30613;width:0%;transition:width 0.3s;}
+
+/* ─── MINIMAP ─────────────────────────── */
+#minimap{
+  position:fixed;right:8px;top:52px;
+  width:66px;height:50px;
+  background:rgba(0,0,0,0.8);border:2px solid #333;
+  z-index:200;overflow:hidden;cursor:pointer;
+}
+#minimap canvas{display:block;image-rendering:pixelated;}
+
+/* ─── JOB BADGE in HUD ───────────────── */
+#hud-job{font-family:'Press Start 2P',monospace;font-size:5px;padding:2px 5px;border-radius:2px;border:1px solid;}
+
+/* ─── BATTLE SCREEN ──────────────────── */
+#battle-screen{
+  position:fixed;top:0;left:0;right:0;bottom:160px;
+  z-index:900;display:flex;flex-direction:column;
+  background:#0a0818;font-family:'Press Start 2P',monospace;
+  overflow-y:auto;
+}
+.bt-client-zone{
+  flex:0 0 42%;display:flex;align-items:center;
+  padding:10px 14px;gap:14px;
+  background:linear-gradient(180deg,#0f1a30 0%,#0a0818 100%);
+  border-bottom:2px solid #1a1a4a;
+  position:relative;overflow:hidden;
+}
+.bt-client-zone::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,0.02) 3px,rgba(255,255,255,0.02) 4px);
+  pointer-events:none;
+}
+#bc-sprite{
+  width:64px;height:80px;flex-shrink:0;
+  image-rendering:pixelated;border-radius:2px;
+}
+.bc-info{flex:1;}
+.bc-name{font-size:7px;color:#FFD600;display:block;margin-bottom:6px;}
+.bc-type{font-size:5px;color:#888;margin-bottom:8px;display:block;}
+.bar-label{font-size:4px;color:#666;margin-bottom:3px;}
+.hp-bar-wrap{height:10px;background:#222;border:2px solid #444;overflow:hidden;border-radius:2px;position:relative;}
+.hp-bar-fill{height:100%;transition:width 0.5s ease;border-radius:1px;}
+.bc-dialog{
+  position:absolute;bottom:6px;left:10px;right:10px;
+  background:rgba(0,0,0,0.8);border:2px solid #333;
+  padding:6px 8px;
+}
+#bc-dialog-txt{font-family:'VT323',monospace;font-size:16px;color:#eee;line-height:1.3;}
+
+.bt-player-zone{
+  flex:0 0 22%;display:flex;align-items:center;
+  padding:8px 14px;gap:12px;
+  background:#080812;border-bottom:2px solid #1a1a2a;
+}
+#bp-sprite{width:40px;height:52px;flex-shrink:0;image-rendering:pixelated;}
+.bp-info{flex:1;}
+.bp-name{font-size:7px;color:#aaffaa;display:block;margin-bottom:4px;}
+.bp-niv{font-size:5px;color:#666;display:block;margin-bottom:6px;}
+.moral-bar-wrap{height:8px;background:#222;border:2px solid #444;overflow:hidden;border-radius:2px;}
+#bp-moral-fill{height:100%;background:linear-gradient(90deg,#0044cc,#44aaff);transition:width 0.4s;}
+#battle-voucher-info{font-size:5px;color:#888;margin-top:4px;}
+
+.bt-menu-zone{
+  flex:1;padding:8px 10px;
+  display:flex;flex-direction:column;gap:6px;
+  overflow-y:auto;touch-action:pan-y;
+  -webkit-overflow-scrolling:touch;
+}
+#bt-prompt{font-size:7px;color:#FFD600;margin-bottom:4px;}
+#bt-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.bat-btn{
+  background:#0d0d22;border:2px solid #333;
+  color:#ccc;font-family:'Press Start 2P',monospace;font-size:6px;
+  padding:10px 6px;cursor:pointer;text-align:center;
+  transition:border-color 0.1s,color 0.1s,background 0.1s;
+  border-radius:3px;
+}
+.bat-btn:active,.bat-btn:hover{border-color:#FFD600;color:#FFD600;background:#111128;}
+.bat-btn.disabled{opacity:0.35;pointer-events:none;}
+.bat-btn-wide{grid-column:1/-1;border-color:#E30613;color:#E30613;}
+.bat-btn-wide:hover,.bat-btn-wide:active{background:#1a0008;border-color:#ff4444;color:#ff4444;}
+
+#bt-sub-menu{display:flex;flex-direction:column;gap:4px;}
+.bsub-btn{
+  background:#0a1a0a;border:2px solid #1a4a1a;
+  color:#88cc88;font-family:'VT323',monospace;font-size:16px;
+  padding:8px 10px;cursor:pointer;text-align:left;
+  transition:border-color 0.1s;border-radius:2px;
+}
+.bsub-btn:hover,.bsub-btn:active{border-color:#00cc44;color:#aaffaa;}
+
+/* Slider voucher */
+#bt-voucher-zone{display:flex;flex-direction:column;gap:8px;}
+#voucher-slider{width:100%;accent-color:#FFD600;}
+#voucher-preview{font-family:'VT323',monospace;font-size:16px;color:#FFD600;}
+
+/* Demonstrează mini-game */
+#bt-demo-zone{display:flex;flex-direction:column;gap:6px;}
+.demo-timer-wrap{height:6px;background:#222;border:2px solid #444;overflow:hidden;}
+#demo-timer-fill{height:100%;background:#E30613;transition:width 0.1s linear;}
+#demo-features{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.demo-feat-btn{
+  background:#0a1a2a;border:2px solid #1a3a4a;
+  color:#88aacc;font-family:'VT323',monospace;font-size:14px;
+  padding:8px;cursor:pointer;text-align:center;border-radius:3px;
+  transition:all 0.1s;
+}
+.demo-feat-btn.tapped{border-color:#00cc44;background:#0a2a0a;color:#aaffaa;}
+.demo-feat-btn.wrong{border-color:#E30613;background:#1a0008;color:#ff6666;}
+
+/* Result overlay (on top of battle) */
+#bt-result{
+  position:absolute;inset:0;background:rgba(0,0,0,0.88);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:10;gap:10px;
+}
+#bt-result-icon{font-size:52px;}
+#bt-result-title{font-size:11px;text-align:center;}
+#bt-result-details{font-family:'VT323',monospace;font-size:18px;color:#ccc;text-align:center;line-height:1.6;}
+
+/* Shake animation */
+@keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
+.shake{animation:shake 0.35s ease;}
+@keyframes flashRed{0%,100%{filter:brightness(1);}50%{filter:brightness(2) sepia(1) hue-rotate(-30deg);}}
+.hit-flash{animation:flashRed 0.3s ease;}
+
+/* ─── HIRE SCREEN ────────────────────── */
+#hire-screen{
+  position:fixed;top:0;left:0;right:0;bottom:160px;z-index:850;
+  background:rgba(0,0,0,0.96);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;padding:24px;overflow-y:auto;
+  font-family:'Press Start 2P',monospace;
+}
+#hire-title{font-size:9px;color:#FFD600;text-align:center;}
+#hire-body{font-family:'VT323',monospace;font-size:17px;color:#ccc;text-align:center;line-height:1.6;max-width:320px;}
+.hire-btn{
+  background:#007733;color:white;border:3px solid #00cc55;
+  padding:12px 24px;font-family:'Press Start 2P',monospace;font-size:8px;
+  cursor:pointer;box-shadow:3px 3px 0 #003311;margin:4px;
+}
+.hire-btn-cancel{
+  background:transparent;color:#555;border:2px solid #333;
+  padding:10px 20px;font-family:'Press Start 2P',monospace;font-size:7px;
+  cursor:pointer;margin:4px;
+}
+.hire-btn-quit{
+  background:#440000;color:#ff4444;border:2px solid #660000;
+  padding:10px 20px;font-family:'Press Start 2P',monospace;font-size:7px;
+  cursor:pointer;margin:4px;
+}
+#bt-timer-stripe{display:flex;align-items:center;gap:6px;padding:4px 10px;background:#0d0d20;border-bottom:2px solid #1a1a3a;flex-shrink:0;}
+#bt-timer-bar-wrap{flex:1;height:8px;background:#111;border:2px solid #333;overflow:hidden;border-radius:2px;}
+#bt-client-timer{height:100%;width:100%;background:#00cc44;transition:width 0.25s linear;border-radius:1px;}
+#bt-secs{font-family:'Press Start 2P',monospace;font-size:6px;color:#FFD600;flex-shrink:0;min-width:28px;text-align:right;}
+#bc-anger{font-size:14px;display:inline-block;margin-left:6px;vertical-align:middle;}
+
+/* ─── ACHIEVEMENTS & LEADERBOARD ─────────── */
+#achievements-screen,#leaderboard-screen{
+  position:fixed;top:0;left:0;right:0;bottom:160px;z-index:860;
+  background:rgba(0,0,0,0.97);
+  display:flex;flex-direction:column;align-items:center;
+  gap:0;padding:0;overflow:hidden;
+  font-family:'Press Start 2P',monospace;
+}
+.ov-header{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;background:#0a0a18;border-bottom:2px solid #1a1a2a;
+  flex-shrink:0;
+}
+.ov-scroll{
+  flex:1;width:100%;overflow-y:auto;touch-action:pan-y;
+  -webkit-overflow-scrolling:touch;
+  display:flex;flex-direction:column;align-items:center;
+  padding:10px 14px 20px;gap:6px;
+}
+.ach-title,.lb-title{font-size:9px;color:#FFD600;text-align:center;margin-bottom:8px;}
+.ach-item{
+  display:flex;align-items:center;gap:10px;width:100%;max-width:340px;
+  padding:8px 10px;border:1px solid #222;background:#111;border-radius:4px;
+  font-family:'VT323',monospace;
+}
+.ach-unlocked{border-color:#FFD600!important;background:#151000!important;}
+.ach-icon{font-size:20px;flex-shrink:0;width:28px;text-align:center;}
+.ach-name{font-size:11px;color:#FFD600;font-family:'Press Start 2P',monospace;}
+.ach-desc{font-size:13px;color:#888;margin-top:2px;}
+.ach-locked .ach-name{color:#444;font-size:9px;}
+.lb-row{
+  display:flex;justify-content:space-between;align-items:center;
+  width:100%;max-width:340px;padding:7px 10px;
+  border:1px solid #1a1a2a;background:#0a0a15;
+  font-family:'VT323',monospace;font-size:16px;color:#ccc;
+  margin:3px 0;
+}
+.lb-row:first-child{border-color:#FFD600;color:#FFD600;background:#120f00;}
+</style>
+</head>
+<body>
+
+<div id="wrapper">
+  <div id="hud" class="hidden">
+    <div class="hud-item">
+      <div class="hud-lbl">PLAYER</div>
+      <div class="hud-val" id="hud-name">-</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-lbl">NIV</div>
+      <div class="hud-val" id="hud-niv">1</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-lbl">💰 RON</div>
+      <div class="hud-val" id="hud-bani">0</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-lbl">❤️ MORAL</div>
+      <div class="hud-bar"><div class="hud-bar-fill" id="moral-fill" style="width:100%"></div></div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-lbl">🕐 ORA</div>
+      <div class="hud-val" id="hud-time">08:00</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-lbl">JOB</div>
+      <div id="hud-job" style="font-family:'Press Start 2P',monospace;font-size:5px;padding:2px 4px;border:1px solid #333;color:#555">FĂRĂ</div>
+    </div>
+  </div>
+
+  <div id="phaser-container"></div>
+
+  <div id="controls" class="hidden">
+    <div class="dpad" id="dpad" ontouchmove="dpadSlide(event)" ontouchend="dpadEnd(event)">
+      <div class="dp-empty"></div>
+      <div class="dp" id="d-up"   ontouchstart="dp('up',1)"   onmousedown="dp('up',1)"   onmouseup="dp('up',0)">▲</div>
+      <div class="dp-empty"></div>
+      <div class="dp" id="d-left" ontouchstart="dp('left',1)" onmousedown="dp('left',1)" onmouseup="dp('left',0)">◄</div>
+      <div class="dp dp-empty" style="opacity:0.08;pointer-events:none;border-radius:50%">●</div>
+      <div class="dp" id="d-right"ontouchstart="dp('right',1)"onmousedown="dp('right',1)"onmouseup="dp('right',0)">►</div>
+      <div class="dp-empty"></div>
+      <div class="dp" id="d-down" ontouchstart="dp('down',1)" onmousedown="dp('down',1)" onmouseup="dp('down',0)">▼</div>
+      <div class="dp-empty"></div>
+    </div>
+    <div class="action-btns">
+      <div style="display:flex;flex-direction:column;gap:6px;padding-bottom:4px">
+        <div class="btn-select" onclick="showAchievements()">🏆</div>
+        <div class="btn-select" onclick="showLeaderboard()">🥇</div>
+      </div>
+      <div class="abtn btn-b" id="btn-b" ontouchstart="ab('b',1)" ontouchend="ab('b',0)" onmousedown="ab('b',1)" onmouseup="ab('b',0)">B<br>ÎNAPOI</div>
+      <div class="abtn btn-a" id="btn-a" ontouchstart="ab('a',1)" ontouchend="ab('a',0)" onmousedown="ab('a',1)" onmouseup="ab('a',0)">A<br>ACȚIUNE</div>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAYS -->
+<div id="menu-screen" class="ov">
+  <div class="logo-main">⚡ RETAIL WARS ⚡<br>ROMÂNIA</div>
+  <div class="logo-sub">Devino magnatul retailului românesc.<br>Vinde. Cumpără. Cucerește.</div>
+  <div class="pixel-hero" id="menu-hero">🧑‍💼</div>
+  <button class="mbtn" id="btn-continue" onclick="doContinue()">▶ CONTINUĂ</button>
+  <button class="mbtn" id="btn-newgame" onclick="doNewGame()">✦ JOC NOU</button>
+  <div style="display:flex;gap:10px;margin-top:6px">
+    <button class="mbtn" style="font-size:6px;padding:8px 14px" onclick="showAchievementsMenu()">🏆 REALIZĂRI</button>
+    <button class="mbtn" style="font-size:6px;padding:8px 14px" onclick="showLeaderboardMenu()">🥇 CLASAMENT</button>
+  </div>
+  <div class="version-tag">v1.0 · Retail Wars România · Phase 3</div>
+</div>
+
+<div id="char-screen" class="ov hidden"></div>
+
+<div id="loading-screen" class="ov hidden">
+  <div>Se generează lumea...</div>
+  <div class="load-bar-wrap"><div class="load-bar-fill" id="load-bar"></div></div>
+  <div id="load-label" style="font-size:5px;color:#555">Inițializare...</div>
+</div>
+
+<div id="dialog-box" class="hidden">
+  <div id="dlg-speaker">CLIENT:</div>
+  <div id="dlg-text"></div>
+  <div id="dlg-choices"></div>
+  <div id="dlg-continue" class="hidden">▼ apasă A</div>
+</div>
+
+<div id="minimap" class="hidden"><canvas id="minimap-canvas" width="66" height="50"></canvas></div>
+<div id="notif"></div>
+
+<!-- BATTLE SCREEN -->
+<div id="battle-screen" class="hidden">
+  <div id="bt-timer-stripe">
+    <div id="bt-timer-bar-wrap"><div id="bt-client-timer"></div></div>
+    <div id="bt-secs">60s</div>
+  </div>
+  <div class="bt-client-zone">
+    <canvas id="bc-sprite" width="64" height="80"></canvas>
+    <div class="bc-info">
+      <span class="bc-name" id="bc-name">Client</span>
+      <span class="bc-type" id="bc-type">agresiv · obiecție preț</span>
+      <span id="bc-anger" title="Răbdarea clientului">😐</span>
+      <div class="bar-label">REZISTENȚĂ LA CUMPĂRARE</div>
+      <div class="hp-bar-wrap">
+        <div class="hp-bar-fill" id="bc-hp-fill" style="width:100%;background:linear-gradient(90deg,#cc0000,#ff4444)"></div>
+      </div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:5px;color:#888;margin-top:3px" id="bc-hp-txt">200/200</div>
+    </div>
+    <div class="bc-dialog" id="bc-dialog">
+      <div id="bc-dialog-txt"></div>
+    </div>
+  </div>
+
+  <div class="bt-player-zone">
+    <canvas id="bp-sprite" width="40" height="52"></canvas>
+    <div class="bp-info">
+      <span class="bp-name" id="bp-name">Andrei</span>
+      <span class="bp-niv" id="bp-niv">Niv.1 · Persuasiune 3/10</span>
+      <div class="bar-label">MORAL</div>
+      <div class="moral-bar-wrap"><div id="bp-moral-fill" style="width:100%"></div></div>
+      <div id="battle-voucher-info">Voucher: NU</div>
+    </div>
+  </div>
+
+  <div class="bt-menu-zone">
+    <div id="bt-prompt">Ce faci?</div>
+    <div id="bt-actions">
+      <button class="bat-btn" id="bact-arg" onclick="bAction('argumenteaza')">🗣 ARGUMENTEAZĂ</button>
+      <button class="bat-btn" id="bact-demo" onclick="bAction('demonstreaza')">📱 DEMONSTREAZĂ</button>
+      <button class="bat-btn" id="bact-vouch" onclick="bAction('voucher')">🏷 VOUCHER</button>
+      <button class="bat-btn" id="bact-sef" onclick="bAction('suna_seful')">📞 SUNĂ ȘEFUL</button>
+      <button class="bat-btn bat-btn-wide" onclick="bAction('fugi')">🏃 FUGI</button>
+    </div>
+    <div id="bt-sub-menu" class="hidden"></div>
+    <div id="bt-voucher-zone" class="hidden">
+      <div style="font-family:'VT323',monospace;font-size:15px;color:#888">Alege reducerea (din comisionul tău):</div>
+      <input type="range" id="voucher-slider" min="5" max="20" step="5" value="5" oninput="updateVoucherPreview()">
+      <div id="voucher-preview">5% reducere</div>
+      <div style="display:flex;gap:8px">
+        <button class="bat-btn" onclick="confirmVoucher()" style="flex:1">✅ APLICĂ</button>
+        <button class="bat-btn" onclick="closeBattleSubmenu()" style="flex:1">← ÎNAPOI</button>
+      </div>
+    </div>
+    <div id="bt-demo-zone" class="hidden">
+      <div style="font-family:'VT323',monospace;font-size:15px;color:#aaa">Tapează cele 3 caracteristici relevante! <span id="demo-score">0/3</span></div>
+      <div class="demo-timer-wrap"><div id="demo-timer-fill" style="width:100%"></div></div>
+      <div id="demo-features"></div>
+    </div>
+  </div>
+
+  <div id="bt-result" class="hidden">
+    <div id="bt-result-icon">🎉</div>
+    <div id="bt-result-title" style="color:#FFD600"></div>
+    <div id="bt-result-details"></div>
+    <button class="bat-btn" style="margin-top:10px;border-color:#FFD600;color:#FFD600" onclick="closeBattle()">CONTINUĂ →</button>
+  </div>
+</div>
+
+<!-- HIRE SCREEN -->
+<div id="hire-screen" class="hidden">
+  <div id="hire-title">ANGAJARE</div>
+  <div id="hire-body"></div>
+  <div id="hire-actions"></div>
+</div>
+
+<!-- ACHIEVEMENTS SCREEN -->
+<div id="achievements-screen" class="hidden">
+  <div class="ov-header">
+    <span style="font-size:8px;color:#FFD600">🏆 REALIZĂRI</span>
+    <button class="hire-btn-cancel" style="padding:6px 14px;font-size:7px" onclick="closeAchievements()">✕ ÎNCHIDE</button>
+  </div>
+  <div class="ov-scroll">
+    <div id="ach-list" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:6px"></div>
+  </div>
+</div>
+
+<!-- LEADERBOARD SCREEN -->
+<div id="leaderboard-screen" class="hidden">
+  <div class="ov-header">
+    <span style="font-size:8px;color:#FFD600">🥇 CLASAMENT</span>
+    <button class="hire-btn-cancel" style="padding:6px 14px;font-size:7px" onclick="closeLeaderboard()">✕ ÎNCHIDE</button>
+  </div>
+  <div class="ov-scroll">
+    <div id="lb-list" style="width:100%;display:flex;flex-direction:column;align-items:center"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  RETAIL WARS: ROMÂNIA  —  Phase 1
+//  Engine: Phaser 3.70  |  AI: Groq llama-3.3-70b
+//  Autor: Claude pentru baiatul-cu-it.ro
+// ═══════════════════════════════════════════════════════════════
+
+// 👇 PUNE CHEIA GROQ AICI (gsk_...)
+const GROQ_KEY = "PUNE_CHEIA_GROQ_AICI";
+const SAVE_KEY = "rw_v1_save";
+const TILE = 16;
+const MAP_W = 80, MAP_H = 60;
+const WORLD_W = MAP_W * TILE; // 1280
+const WORLD_H = MAP_H * TILE; // 960
+
+// ─── Save ───────────────────────────────────────────────────────
+const Save = {
+  load(){ try{ return JSON.parse(localStorage.getItem(SAVE_KEY)); }catch{return null;} },
+  write(d){ localStorage.setItem(SAVE_KEY, JSON.stringify(d)); },
+  clear(){ localStorage.removeItem(SAVE_KEY); }
+};
+
+// ─── Global State ───────────────────────────────────────────────
+const G = {
+  name:'', gender:'M', appearance:0, magazin:'flanco',
+  nivel:1, xp:0, bani:1500, moral:100, persuasiune:3,
+  job:null,            // null | 'flanco' | 'atexl' | 'mage'
+  jobSince:0,          // in-game days since hired
+  npcConvinsi:{}, achievements:[], afaceri:[],
+  gameHour:8, gameMin:0, gameDay:1,
+  sefCallsToday:0,     // sună șeful counter (resets daily)
+  savings:0, loan:0, loanDay:0,   // bancă
+  elegantSales:0, coffees:0,      // achievement counters
+  lastSalaryDay:0,                // anti-duplicate salary guard
+  // runtime
+  scene:null, dialogActive:false,
+  keys:{up:false,down:false,left:false,right:false,a:false,b:false},
+  aWasDown:false
+};
+
+function gs(){ return G; }
+function saveGame(){
+  Save.write({
+    name:G.name,gender:G.gender,appearance:G.appearance,magazin:G.magazin,
+    nivel:G.nivel,xp:G.xp,bani:G.bani,moral:G.moral,persuasiune:G.persuasiune,
+    job:G.job,jobSince:G.jobSince,sefCallsToday:G.sefCallsToday,
+    npcConvinsi:G.npcConvinsi,achievements:G.achievements,afaceri:G.afaceri,
+    gameHour:G.gameHour,gameMin:G.gameMin,gameDay:G.gameDay,
+    savings:G.savings,loan:G.loan,loanDay:G.loanDay,
+    elegantSales:G.elegantSales,coffees:G.coffees,lastSalaryDay:G.lastSalaryDay
+  });
+}
+function loadIntoG(d){ Object.assign(G,d); updateHUD(); }
+
+// ─── HUD ─────────────────────────────────────────────────────────
+function updateHUD(){
+  $('hud-name').textContent = G.name||'?';
+  $('hud-niv').textContent = G.nivel;
+  $('hud-bani').textContent = numFmt(G.bani);
+  $('moral-fill').style.width = G.moral+'%';
+  $('hud-time').textContent = pad2(G.gameHour)+':'+pad2(G.gameMin);
+  const jb=$('hud-job');
+  if(jb){
+    const jCfg={flanco:{t:'FLC',c:'#E30613',b:'#300005'},atexl:{t:'ATX',c:'#0044cc',b:'#000530'},mage:{t:'MGE',c:'#ff6600',b:'#200800'}};
+    const j=G.job?jCfg[G.job]:null;
+    jb.textContent=j?j.t:'FĂRĂ';
+    jb.style.color=j?j.c:'#444';
+    jb.style.borderColor=j?j.c:'#333';
+    jb.style.background=j?j.b:'transparent';
+  }
+}
+function addBani(n){ G.bani+=n; updateHUD(); notify('+'+numFmt(n)+' RON 💰'); saveGame(); }
+function addXP(n){
+  G.xp+=n;
+  const need=G.nivel*100;
+  if(G.xp>=need){ G.xp-=need; G.nivel++; G.persuasiune=Math.min(10,3+Math.floor(G.nivel*0.3)); updateHUD(); notify('🎉 NIVEL '+G.nivel+'! Persuasiune: '+G.persuasiune); }
+  else updateHUD();
+}
+function addMoral(n){ G.moral=clamp(G.moral+n,0,100); updateHUD(); }
+
+// ─── Utils ───────────────────────────────────────────────────────
+function $(id){ return document.getElementById(id); }
+function pad2(n){ return String(n).padStart(2,'0'); }
+function numFmt(n){ return n.toLocaleString('ro'); }
+function rnd(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function getBattleTimeLimit(){
+  const n=G.nivel;
+  if(n<5) return 60; if(n<10) return 55; if(n<15) return 50;
+  if(n<20) return 45; if(n<25) return 35; if(n<30) return 25; return 20;
+}
+function updateAngerDisplay(){
+  const icons=['😐','😒','😠','🤬'];
+  const el=$('bc-anger');
+  if(el) el.textContent=icons[Math.min(BATTLE.clientAnger,3)];
+}
+function clamp(v,mn,mx){ return Math.max(mn,Math.min(mx,v)); }
+function dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
+function hex2n(h){ return parseInt(h.replace('#',''),16); }
+
+let _nt;
+function notify(txt){
+  const n=$('notif'); n.textContent=txt; n.style.opacity='1';
+  clearTimeout(_nt); _nt=setTimeout(()=>{ n.style.opacity='0'; },2400);
+}
+
+// ─── Touch / keyboard ────────────────────────────────────────────
+function dp(dir,on){
+  G.keys[dir]=!!on;
+  $('d-'+dir)?.classList.toggle('on',!!on);
+  if(G.scene?.setPlayerVel) G.scene.setPlayerVel();
+}
+function ab(btn,on){
+  G.keys[btn]=!!on;
+  $('btn-'+btn)?.classList.toggle('on',!!on);
+  if(on&&btn==='a'){ if(G.scene?.onA) G.scene.onA(); }
+}
+const DPAD_IDS={'d-up':'up','d-left':'left','d-right':'right','d-down':'down'};
+let _dpadActiveDir=null;
+function dpadSlide(e){
+  const t=e.touches[0];
+  const el=document.elementFromPoint(t.clientX,t.clientY);
+  const dir=el&&DPAD_IDS[el.id];
+  if(dir===_dpadActiveDir) return;
+  if(_dpadActiveDir) dp(_dpadActiveDir,0);
+  _dpadActiveDir=dir||null;
+  if(_dpadActiveDir) dp(_dpadActiveDir,1);
+}
+function dpadEnd(e){
+  if(_dpadActiveDir){ dp(_dpadActiveDir,0); _dpadActiveDir=null; }
+  ['up','down','left','right'].forEach(d=>dp(d,0));
+}
+document.addEventListener('keydown',e=>{
+  const m={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',KeyZ:'a',KeyX:'b',Space:'a'};
+  if(m[e.code]){ e.preventDefault(); dp(m[e.code],1); if(m[e.code]==='a'&&G.scene?.onA) G.scene.onA(); }
+});
+document.addEventListener('keyup',e=>{
+  const m={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',KeyZ:'a',KeyX:'b',Space:'a'};
+  if(m[e.code]) dp(m[e.code],0);
+});
+document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+
+// ─── Romanian Data ───────────────────────────────────────────────
+const NAMES = ['Ion','Maria','Gheorghe','Elena','Vasile','Ana','Mihai','Ioana',
+  'Constantin','Cristina','Alexandru','Daniela','Florin','Andreea','Bogdan','Raluca',
+  'Cătălin','Simona','Marius','Alina','Sorin','Laura','Vlad','Monica','Radu','Claudia',
+  'Adrian','Roxana','Dan','Iulia','Paul','Carmen','Tudor','Diana','Lucian','Gabriela'];
+
+const PERSONAS = ['agresiv','pasiv','analitic','emotional','grabit','nehotarat'];
+
+const OBIECTII = {
+  pret:   ['La {comp} l-am văzut cu {X} lei mai ieftin!','Nu pot da atât. Merită investiția?','Soția nu mă lasă să dau mai mult de {X} lei.','Poate mai lăsați ceva din preț?'],
+  calitate:['Am citit pe forum că are probleme după 6 luni.','Un vecin a cumpărat și s-a stricat repede.','Pare fragil. Nu știu dacă rezistă.','Brand-ul ăsta nu mi se pare serios.'],
+  comparatie:['La {comp} e cu garanție extinsă inclusă.','De ce e mai scump la voi decât online?','Concurența voastră are ofertă mai bună acum.','Onlineul e cu 300 lei mai ieftin, ce faceți?'],
+  incredere:['Dar dacă se strică? Service-ul e ok?','Am auzit că returnurile sunt grele la voi.','Nu știu dacă garanția e reală sau nu.','Prietenul meu a avut probleme cu voi.'],
+  urgenta:['Trebuie să îl am până la 5 seara.','Nu am timp de explicații lungi.','Dacă nu e în stoc, plec la altul.','Soția mă grăbește, faceți repede.']
+};
+
+function fillObiectie(template){
+  const comp = pick(['Atexl','MagE','eMag','Flanco','online']);
+  const X = pick([50,100,150,200,300,400]);
+  return template.replace('{comp}',comp).replace('{X}',X);
+}
+
+const LEGENDARI = {
+  vasile:{
+    id:'vasile',name:'Vasile cel Etern',emoji:'👴',rig:10,hp:200,hpMax:200,
+    persona:'agresiv',obiectieType:'pret',
+    replica:'La Flanco era mai ieftin în 2019. Atunci era calitate!',
+    slabiciune:['2019','vechi','depășit','nou','tehnologie','modern'],
+    reward:{bani:500,xp:200},legendary:true,
+    desc:'Nostalgicul Eternal — îi place ce-a fost'
+  },
+  cornelia:{
+    id:'cornelia',name:'Dna. Cornelia',emoji:'👩',rig:9,hp:180,hpMax:180,
+    persona:'emotional',obiectieType:'incredere',
+    replica:'Fiul meu, care se pricepe la toate, zice că produsul ăsta e prost.',
+    slabiciune:['fiul','dreptate','dar','știe','suplimentar','inform'],
+    reward:{bani:400,xp:180},legendary:true,
+    desc:'Mama cu Fiul Expert — validarea e cheia'
+  },
+  gigel:{
+    id:'gigel',name:'Gigel Expertul',emoji:'🤓',rig:8,hp:160,hpMax:160,
+    persona:'analitic',obiectieType:'calitate',
+    replica:'Am citit pe forum că după 2 ani bateria se degradează cu 40%. Am dovezi.',
+    slabiciune:['expert','forum','dreptate','interesant','știați','date'],
+    reward:{bani:350,xp:160},legendary:true,
+    desc:'Omul cu Datele — fă-l partener, nu adversar'
+  },
+  coste:{
+    id:'coste',name:'Coste Managerul',emoji:'💼',rig:10,hp:220,hpMax:220,
+    persona:'agresiv',obiectieType:'pret',
+    replica:'Fac factură pe firmă. Vreau 40% discount sau sun la manager!',
+    slabiciune:['business','firmă','B2B','contract','parteneriat','comercial'],
+    reward:{bani:800,xp:250},legendary:true,
+    desc:'Corporatistul Agresiv — propune cont business'
+  },
+  elena:{
+    id:'elena',name:'Elena Returnatoarea',emoji:'🛍️',rig:9,hp:150,hpMax:150,
+    persona:'emotional',obiectieType:'incredere',
+    replica:'L-am cumpărat acum 15 luni și s-a stricat. Vreau schimb sau bani înapoi.',
+    slabiciune:['înțeleg','situație','rezolvăm','service','soluție','ajutăm'],
+    reward:{bani:200,xp:140},legendary:true,
+    desc:'Doamna cu Reclamația — empatia bate regulile'
+  }
+};
+
+function makeClient(){
+  const rig=rnd(1,8);
+  const obiectieType=pick(Object.keys(OBIECTII));
+  const templates=OBIECTII[obiectieType];
+  return {
+    id:'c_'+Date.now()+'_'+rnd(0,9999),
+    name:pick(NAMES),
+    emoji:pick(['😤','😊','🤔','🙎','😐','🤨','😑','🧐']),
+    rig,hp:50+rig*15,hpMax:50+rig*15,
+    persona:pick(PERSONAS),obiectieType,
+    replica:fillObiectie(pick(templates)),
+    reward:{bani:80+rig*40+rnd(0,80),xp:10+rig*7},
+    legendary:false
+  };
+}
+
+// ─── Groq API ────────────────────────────────────────────────────
+// ─── Date reale retail (sursă: site-uri oficiale 2025) ───────────
+const RETAIL_FACTS = {
+  flanco:{
+    nume:'FLANCO',
+    retur:'45 zile calendaristice (cel mai generos din piață; Altex/eMAG = 14 resp. 30)',
+    garantie_legala:'2 ani persoane fizice, 1 an persoane juridice (conf. lege UE)',
+    garantie_ext:'Garanția Extinsă Flanco: 1-2 ani extra',
+    rate:'Oney: 3 sau 4 rate, prima la cumpărare, sume 500–2500 RON',
+    livrare:'Gratuită de la 200 lei sau ridicare gratuită din orice magazin Flanco',
+    serviciu_cheie:'Preluăm produsul defect direct din magazin — tu nu cauți service',
+    serviciu2:'Reparație electrocasnice mari la domiciliu (tehnicieni la tine acasă)',
+    avantaj_vs_concurenta:'Retur 45 zile vs. 14 Altex; garanție gestionată intern fără stres curier'
+  },
+  atexl:{
+    nume:'ALTEX (ATEXL)',
+    retur:'14 zile, ambalaj original intact',
+    garantie_legala:'2 ani',
+    garantie_ext:'Extragaranție: 1-2 ani extra',
+    price_match:'Politica "2x Diferența" — plătim DUBLU diferența dacă găsești mai ieftin la concurență autorizată în 24h',
+    rate:'Rate prin Credex IFN (aprobare la raft) sau 36-40 rate bănci partenere',
+    livrare:'Gratuită de la 250 lei sau GRATUIT la "Rezervă și Ridică" în magazin',
+    serviciu_cheie:'"2x Diferența" — garanția absolută de cel mai mic preț',
+    serviciu2:'Rezervă online, ridici instant din magazin — zero așteptare livrare',
+    avantaj_vs_concurenta:'Cel mai mic preț garantat matematic; rețea fizică cea mai mare din România'
+  },
+  mage:{
+    nume:'eMAG (MagE)',
+    retur:'30 zile standard / 60 zile pentru membri Genius',
+    garantie_legala:'2 ani',
+    garantie_ext:'Garanție Plus: 1-2 ani extra',
+    instant_money_back:'Instant Money Back — banii pe card în MAX 30 minute după retur la EasyBox',
+    easybox:'EasyBox 24/7 — returnezi oricând, scanezi QR, gata; nu depinzi de curieri',
+    genius:'Genius: livrare gratuită (50 lei EasyBox/100 lei curier), 60 zile retur, oferte exclusive',
+    rate:'Până la 12 rate eMAG Wallet (cont propriu) sau 24 rate carduri',
+    livrare:'Gratuită Genius: 50 lei EasyBox / 100 lei curier; cea mai rapidă (livrare weekend)',
+    serviciu_cheie:'Instant Money Back + EasyBox 24/7 = retur cel mai simplu din România',
+    avantaj_vs_concurenta:'60 zile retur Genius; 3M+ produse; banii înapoi în 30 min nu 5-7 zile bancare'
+  }
+};
+
+function getRetailContext(magazin){
+  const f=RETAIL_FACTS[magazin]||RETAIL_FACTS.flanco;
+  return `MAGAZIN: ${f.nume}
+FAPTE REALE VERIFICATE:
+- Retur: ${f.retur}
+- Garanție legală: ${f.garantie_legala}
+- Garanție extinsă: ${f.garantie_ext||'disponibilă'}
+- Rate: ${f.rate||'disponibile'}
+- Livrare: ${f.livrare||'disponibilă'}
+${f.price_match?'- Price match: '+f.price_match:''}
+${f.instant_money_back?'- Money back: '+f.instant_money_back:''}
+${f.genius?'- Genius: '+f.genius:''}
+${f.easybox?'- EasyBox: '+f.easybox:''}
+- Serviciu cheie: ${f.serviciu_cheie}
+- Avantaj față de concurență: ${f.avantaj_vs_concurenta}
+REGULA: Dacă jucătorul citează un fapt real din lista de mai sus, clientul TREBUIE să reacționeze pozitiv (goodChoice:true). Dacă argumentul e vag/inventat, goodChoice:false.`;
+}
+
+const FALLBACKS = {
+  agresiv:  {replica:'Asta nu mă convinge deloc!',        goodChoice:false, effect:'none'},
+  pasiv:    {replica:'Hmm... poate aveți dreptate.',      goodChoice:true,  effect:'interesat'},
+  analitic: {replica:'Trebuie să verific specificațiile.',goodChoice:false, effect:'none'},
+  emotional:{replica:'Sună bine, dar nu știu...',         goodChoice:true,  effect:'interesat'},
+  grabit:   {replica:'Ok dar faceți repede.',             goodChoice:false, effect:'none'},
+  nehotarat:{replica:'Poate... mai mă gândesc.',          goodChoice:false, effect:'none'}
+};
+
+async function callGroq(client, playerChoice){
+  const magazin=G.job||G.magazin;
+  const retailCtx=getRetailContext(magazin);
+  try {
+    const resp = await Promise.race([
+      fetch('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
+        body:JSON.stringify({
+          model:'llama-3.3-70b-versatile',
+          max_tokens:120, temperature:0.75,
+          messages:[
+            {role:'system', content:
+`Ești engine-ul RPG pentru jocul "Retail Wars: România". Simulezi un client real din România care negociază achiziția unui produs electronic.
+${retailCtx}
+Răspunde STRICT cu JSON valid, fără markdown, fără text extra:
+{"replica":"reacție autentică max 14 cuvinte română, specifică contextului","goodChoice":true|false,"effect":"none|convins|interesat|furios"}
+- "replica" trebuie să sune ca un client real, nu ca un robot
+- Dacă argumentul folosește un fapt real din lista de mai sus → goodChoice:true
+- Dacă e vag, inventat sau irelevant → goodChoice:false
+- effect "furios" doar dacă clientul se simte presat sau manipulat`
+            },
+            {role:'user', content:
+`Client: ${client.name} (personalitate: ${client.persona}, rigiditate ${client.rig}/10)
+Obiecție inițială a clientului: "${client.replica}"
+Argumentul angajatului ${G.name} (nivel ${G.nivel}, persuasiune ${G.persuasiune}/10): "${playerChoice}"
+Cum reacționează clientul?`
+            }
+          ]
+        })
+      }),
+      new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),4500))
+    ]);
+    const data=await resp.json();
+    const txt=data.choices?.[0]?.message?.content||'';
+    const m=txt.match(/\{[\s\S]*?\}/);
+    if(m) return JSON.parse(m[0]);
+    throw new Error('no json');
+  } catch(e){
+    console.warn('[Groq fallback]',e.message);
+    return FALLBACKS[client.persona]||FALLBACKS.pasiv;
+  }
+}
+
+// ─── Choices per obiectie (dialog, folosesc fapte reale per magazin) ─
+function getChoices(client){
+  const mag=G.job||G.magazin;
+  const MAP={
+    flanco:{
+      pret:[
+        'Avem 45 zile retur — de 3× mai mult decât concurența.',
+        'Oney: 3 sau 4 rate fără dobândă, prima la cumpărare (500–2500 RON).',
+        'Garanția Extinsă Flanco: protecție 1-2 ani extra peste lege.'
+      ],
+      calitate:[
+        'Produsul are certificare CE europeană obligatorie.',
+        'Garanție legală 2 ani — ne ocupăm noi de service, fără curieri.',
+        'Reparație la domiciliu pentru electrocasnice mari.'
+      ],
+      comparatie:[
+        '45 zile retur la noi față de 14 zile Altex sau 30 eMAG.',
+        'Ne ocupăm de garanție direct în magazin, fără service extern.',
+        'Livrare gratuită de la 200 lei sau ridicare gratuită din magazin.'
+      ],
+      incredere:[
+        'Returnul 45 zile — timp să testezi acasă fără presiune.',
+        'Garanție gestionată intern, nu trimiți tu produsul la service.',
+        'Finanțare Oney: 3-4 rate, prima la cumpărare, aprobare în 5 minute.'
+      ],
+      urgenta:[
+        'Produsul e în stoc, îl pregătim în 10 minute.',
+        'Ridicare imediată din magazin — fără să aștepți curier.',
+        'Factura e gata instant, pleci cu produsul acum.'
+      ]
+    },
+    atexl:{
+      pret:[
+        'Politica 2× Diferența: dacă găsești mai ieftin, plătim dublu diferența.',
+        'Rate prin Credex IFN — aprobare la raft, fără bancă.',
+        'Prețul cel mai mic garantat matematic — imposibil să ieși în pierdere.'
+      ],
+      calitate:[
+        'Extragaranție Altex disponibilă: 1-2 ani extra protecție.',
+        'Cea mai mare rețea de service din România în parteneriat.',
+        'Produsul are certificare CE și testare înainte de livrare.'
+      ],
+      comparatie:[
+        '2× Diferența — prețul cel mai mic garantat, altfel plătim noi.',
+        'Rezervă online, ridici instant din magazin — zero livrare.',
+        'Credex IFN: rate direct la raft, fără card bancar necesar.'
+      ],
+      incredere:[
+        'Garanție 2 ani + Extragaranție pentru protecție completă.',
+        '14 zile retur în stare originală, conform legii.',
+        '2× Diferența — garanția că nu plătești niciodată mai mult.'
+      ],
+      urgenta:[
+        'Rezervă acum online și ridici în 30 de minute din magazin.',
+        'Produsul e în stoc — verificat în timp real.',
+        'Credex IFN aprobat în 2 minute la casă, pleci cu produsul azi.'
+      ]
+    },
+    mage:{
+      pret:[
+        'Genius: livrare gratuită + 60 zile retur pentru abonați.',
+        'Rate eMAG Wallet: până la 12 rate din contul tău, fără bancă.',
+        'Cel mai mare catalog — 3 milioane produse, prețuri competitive.'
+      ],
+      calitate:[
+        'Garanție Plus eMAG: 1-2 ani extra, gestionat digital.',
+        'Recenzii verificate de cumpărători reali în platformă.',
+        'Returnezi simplu prin EasyBox — fără să explici nimănui.'
+      ],
+      comparatie:[
+        '30 zile retur standard; 60 zile cu Genius — dublu față de Altex.',
+        'Instant Money Back: banii pe card în 30 minute, nu 5-7 zile.',
+        'EasyBox 24/7 — returnezi la 3 noaptea dacă vrei, nu depinzi de curier.'
+      ],
+      incredere:[
+        'Instant Money Back: banii înapoi în MAX 30 minute după retur.',
+        'EasyBox 24/7 lângă tine — returnezi oricând, scanezi QR, gata.',
+        'eMAG Genius: 60 zile retur + livrare gratuită nelimitată.'
+      ],
+      urgenta:[
+        'Livrare a doua zi sau în aceeași zi în orașe mari.',
+        'Rezervi online acum și ridici de la EasyBox în 2 ore.',
+        'Plată instant prin eMAG Wallet — fără card fizic.'
+      ]
+    }
+  };
+  const storeMap=MAP[mag]||MAP.flanco;
+  const arr=storeMap[client.obiectieType]||storeMap.pret;
+  return arr.map(t=>({text:t}));
+}
+
+// ─── Appearances ─────────────────────────────────────────────────
+const APPEARANCES = [
+  {label:'Andrei', hair:'#3d2200', shirt:'#E30613', skinTone:'#FDBCB4', gender:'M'},
+  {label:'Mihai',  hair:'#cc9900', shirt:'#0044cc', skinTone:'#FDBCB4', gender:'M'},
+  {label:'Ana',    hair:'#1a1a1a', shirt:'#009944', skinTone:'#F5CBA7', gender:'F'},
+  {label:'Maria',  hair:'#8B0000', shirt:'#cc6600', skinTone:'#F5CBA7', gender:'F'},
+];
+
+// ─── Menu ────────────────────────────────────────────────────────
+function initMenu(){
+  const save=Save.load();
+  $('btn-continue').style.display=save?'':'none';
+  $('btn-newgame').textContent=save?'✦ JOC NOU':'▶ ÎNCEPE';
+}
+function showAchievementsMenu(){
+  const save=Save.load();
+  if(save) loadIntoG(save);
+  showAchievements();
+}
+function showLeaderboardMenu(){
+  showLeaderboard();
+}
+function doContinue(){
+  const save=Save.load();
+  if(!save){ doNewGame(); return; }
+  loadIntoG(save);
+  startWorld();
+}
+function doNewGame(){
+  Save.clear();
+  $('menu-screen').classList.add('hidden');
+  showCharCreate();
+}
+
+// ─── Character Creation ──────────────────────────────────────────
+let CD={name:'',gender:'M',appearance:0,magazin:'flanco'};
+let charStep=1;
+
+function showCharCreate(){
+  charStep=1; CD={name:'',gender:'M',appearance:0,magazin:'flanco'};
+  renderStep();
+  $('char-screen').classList.remove('hidden');
+}
+
+function renderStep(){
+  const cc=$('char-screen'); cc.innerHTML='';
+  if(charStep===1) renderStep1(cc);
+  else if(charStep===2) renderStep2(cc);
+  else if(charStep===3) renderStep3(cc);
+}
+
+function renderStep1(cc){
+  const mApps=APPEARANCES.filter(a=>a.gender==='M');
+  const fApps=APPEARANCES.filter(a=>a.gender==='F');
+  const curApps=CD.gender==='M'?mApps:fApps;
+
+  cc.innerHTML=`
+    <div class="step-hdr">PASUL 1/3 — CINE EȘTI?</div>
+    <div class="step-sub">Cum te cheamă, viitor magnat al retailului?</div>
+    <input id="name-inp" type="text" maxlength="12" placeholder="Numele tău..."
+      value="${CD.name}" autocomplete="off" autocorrect="off" spellcheck="false">
+    <div class="step-sub" style="margin-top:10px">Gen:</div>
+    <div class="gender-row">
+      <div class="gcard${CD.gender==='M'?' sel':''}" onclick="CD.gender='M';CD.appearance=0;renderStep()">
+        <span class="gico">👨</span><div class="glbl">BĂIAT</div>
+      </div>
+      <div class="gcard${CD.gender==='F'?' sel':''}" onclick="CD.gender='F';CD.appearance=2;renderStep()">
+        <span class="gico">👩</span><div class="glbl">FATĂ</div>
+      </div>
+    </div>
+    <div class="step-sub">Aspect:</div>
+    <div class="app-grid">
+      ${curApps.map((a,i)=>{
+        const idx=CD.gender==='M'?i:i+2;
+        return `<div class="acard${CD.appearance===idx?' sel':''}" onclick="CD.appearance=${idx};renderStep()">
+          <canvas width="32" height="48" id="aprev${i}" style="width:32px;height:48px"></canvas>
+          <div class="albl">${a.label}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <button class="cfm-btn" onclick="s1Next()">CONTINUĂ →</button>
+  `;
+  // Draw previews
+  curApps.forEach((a,i)=>{
+    const c=document.getElementById('aprev'+i);
+    if(c) drawPreview(c.getContext('2d'),a);
+  });
+}
+
+function drawPreview(ctx,app){
+  ctx.clearRect(0,0,32,48);
+  const skin=app.skinTone||'#FDBCB4';
+  const hair=app.hair; const shirt=app.shirt;
+  // Legs
+  ctx.fillStyle='#1a1a4a'; ctx.fillRect(8,32,6,12); ctx.fillRect(18,32,6,12);
+  ctx.fillStyle='#111';    ctx.fillRect(8,43,6,3);  ctx.fillRect(18,43,6,3);
+  // Body
+  ctx.fillStyle=shirt; ctx.fillRect(8,18,16,15);
+  // Badge
+  ctx.fillStyle='#FFD600'; ctx.fillRect(9,20,7,3);
+  // Head
+  ctx.fillStyle=skin; ctx.fillRect(10,4,12,14);
+  // Hair
+  ctx.fillStyle=hair; ctx.fillRect(10,4,12,4);
+  if(app.gender==='F'){ ctx.fillRect(10,4,3,14); ctx.fillRect(19,4,3,14); }
+  // Eyes
+  ctx.fillStyle='#222'; ctx.fillRect(12,11,3,3); ctx.fillRect(18,11,3,3);
+  // Arms
+  ctx.fillStyle=shirt; ctx.fillRect(5,18,3,10); ctx.fillRect(24,18,3,10);
+  // Hands
+  ctx.fillStyle=skin; ctx.fillRect(5,28,3,3); ctx.fillRect(24,28,3,3);
+}
+
+function s1Next(){
+  const v=$('name-inp')?.value?.trim()||'';
+  if(v.length<2){ notify('⚠️ Introdu un nume (min 2 caractere)!'); return; }
+  CD.name=v; charStep=2; renderStep();
+}
+
+function renderStep2(cc){
+  cc.innerHTML=`
+    <div class="step-hdr">PASUL 2/3 — PRIMUL JOB</div>
+    <div class="step-sub">La ce companie vrei să te angajezi?</div>
+    <div class="store-list">
+      <div class="scard${CD.magazin==='flanco'?' sel':''}" onclick="CD.magazin='flanco';renderStep()" style="border-color:#E30613">
+        <div class="scard-ico">🔴</div>
+        <div class="scard-info">
+          <div class="sname" style="color:#E30613">FLANCO</div>
+          <div class="sdesc">⭐☆☆  Salariu: 3.000 RON/lună<br>Clienți medii · Recomandat nivel 1+</div>
+        </div>
+      </div>
+      <div class="scard${CD.magazin==='atexl'?' sel':''}" onclick="CD.magazin='atexl';renderStep()" style="border-color:#0044cc">
+        <div class="scard-ico">🔵</div>
+        <div class="scard-info">
+          <div class="sname" style="color:#0044cc">ATEXL</div>
+          <div class="sdesc">⭐⭐☆  Salariu: 3.500 RON/lună<br>Clienți dificili · Recomandat nivel 5+</div>
+        </div>
+      </div>
+      <div class="scard${CD.magazin==='mage'?' sel':''}" onclick="CD.magazin='mage';renderStep()" style="border-color:#ff6600">
+        <div class="scard-ico">🟠</div>
+        <div class="scard-info">
+          <div class="sname" style="color:#ff6600">MagE</div>
+          <div class="sdesc">⭐⭐⭐  Salariu: 4.500 RON/lună<br>Clienți imposibili · Nivel 10+ recomandat</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="back-btn" onclick="charStep=1;renderStep()">← ÎNAPOI</button>
+      <button class="cfm-btn" onclick="charStep=3;renderStep()">CONTINUĂ →</button>
+    </div>
+  `;
+}
+
+function renderStep3(cc){
+  const storeName={flanco:'Flanco',atexl:'Atexl',mage:'MagE'}[CD.magazin];
+  cc.innerHTML=`
+    <div class="step-hdr">BINE AI VENIT!</div>
+    <div style="font-size:54px;margin:14px 0;text-align:center">${CD.gender==='M'?'👨‍💼':'👩‍💼'}</div>
+    <div id="intro-txt" class="intro-text"></div>
+    <button class="cfm-btn hidden" id="btn-begin" onclick="beginGame()">ÎNCEPE AVENTURA →</button>
+    <button class="back-btn" onclick="charStep=2;renderStep()">← ÎNAPOI</button>
+  `;
+  // Typing intro
+  const lines=[
+    `Bună ziua, ${CD.name}!`,
+    `Prima ta zi în retailul românesc.`,
+    `Angajat la ${storeName}.`,
+    `Scopul: devino magnat.`,
+    `Vinde. Cumpără. Cucerește.`
+  ];
+  let li=0,ci=0,full='';
+  const el=$('intro-txt');
+  const t=setInterval(()=>{
+    if(li>=lines.length){ clearInterval(t); $('btn-begin').classList.remove('hidden'); return; }
+    const line=lines[li];
+    if(ci<line.length){ full+=line[ci]; el.innerHTML=full.replace(/\n/g,'<br>')+'<span class="cursor"></span>'; ci++; }
+    else{ full+='\n'; li++; ci=0; }
+  },42);
+}
+
+function beginGame(){
+  G.name=CD.name; G.gender=CD.gender; G.appearance=CD.appearance; G.magazin=CD.magazin;
+  G.nivel=1; G.xp=0; G.moral=100; G.persuasiune=3;
+  G.bani={flanco:1500,atexl:2000,mage:3000}[CD.magazin];
+  G.npcConvinsi={}; G.achievements=[]; G.afaceri=[];
+  G.gameHour=8; G.gameMin=0; G.gameDay=1;
+  G.savings=0; G.loan=0; G.loanDay=0;
+  G.elegantSales=0; G.coffees=0; G.lastSalaryDay=0;
+  saveGame();
+  $('char-screen').classList.add('hidden');
+  startWorld();
+}
+
+// ─── World startup ────────────────────────────────────────────────
+function startWorld(){
+  $('menu-screen').classList.add('hidden');
+  $('char-screen').classList.add('hidden');
+  $('loading-screen').classList.remove('hidden');
+  $('hud').classList.remove('hidden');
+  $('controls').classList.remove('hidden');
+  $('minimap').classList.remove('hidden');
+  updateHUD();
+
+  const pc=$('phaser-container');
+  const W=pc.clientWidth||390;
+  const H=pc.clientHeight||500;
+
+  if(window._PG){
+    window._PG.scene.start('World');
+    $('loading-screen').classList.add('hidden');
+    return;
+  }
+
+  window._PG=new Phaser.Game({
+    type:Phaser.AUTO,
+    width:W,height:H,
+    backgroundColor:'#1a2e1a',
+    parent:'phaser-container',
+    physics:{default:'arcade',arcade:{gravity:{y:0},debug:false}},
+    scale:{mode:Phaser.Scale.RESIZE,autoCenter:Phaser.Scale.CENTER_BOTH},
+    scene:[WorldScene, ShopInteriorScene]
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  WORLD SCENE
+// ═══════════════════════════════════════════════════════════════
+class WorldScene extends Phaser.Scene {
+  constructor(){ super({key:'World'}); }
+
+  preload(){
+    // Nothing — 100% procedural
+    setLoad('Generare hartă...', 10);
+  }
+
+  create(){
+    G.scene=this;
+    const W=this.scale.width, H=this.scale.height;
+
+    setLoad('Desenare lume...', 30);
+
+    // ── Generate map ──────────────────────────────────────────
+    this.mapData=this.genMap();
+    setLoad('Clădiri și drumuri...', 55);
+
+    // ── Draw map to render texture ────────────────────────────
+    this.drawWorld();
+    setLoad('Sprite-uri personaje...', 75);
+
+    // ── Physics ───────────────────────────────────────────────
+    this.physics.world.setBounds(0, 0, WORLD_W, WORLD_H);
+    this.walls=this.physics.add.staticGroup();
+    this.addWalls();
+
+    // ── Player ────────────────────────────────────────────────
+    this.createPlayer();
+    setLoad('NPC-uri...', 88);
+
+    // ── NPCs ──────────────────────────────────────────────────
+    this.npcs=[];
+    this.createNPCs();
+
+    // ── Camera ────────────────────────────────────────────────
+    this.cameras.main.setBounds(0,0,WORLD_W,WORLD_H);
+    this.cameras.main.startFollow(this.player,true,0.09,0.09);
+    this.cameras.main.setDeadzone(55,55);
+
+    // ── Prompt text ───────────────────────────────────────────
+    this.promptTxt=this.add.text(0,0,'',{
+      fontFamily:"'Press Start 2P',monospace",fontSize:'6px',color:'#FFD600',
+      backgroundColor:'#000000dd',padding:{x:6,y:4},
+      stroke:'#000',strokeThickness:2
+    }).setDepth(20).setVisible(false).setScrollFactor(0);
+
+    // ── In-game clock ─────────────────────────────────────────
+    this.time.addEvent({
+      delay:12000, loop:true,
+      callback:()=>{
+        G.gameMin+=30;
+        if(G.gameMin>=60){
+          G.gameMin-=60;
+          const oldHour=G.gameHour;
+          G.gameHour=(G.gameHour-8+1)%12+8;
+          if(G.gameHour<oldHour){ G.gameDay=(G.gameDay||1)+1; newDayTick(); }
+        }
+        updateHUD();
+      }
+    });
+
+    // ── Autosave ──────────────────────────────────────────────
+    this.time.addEvent({delay:60000,loop:true,callback:saveGame});
+
+    // ── Minimap update ────────────────────────────────────────
+    this.time.addEvent({delay:2000,loop:true,callback:()=>this.drawMinimap()});
+    this.drawMinimap();
+
+    // ── Resize handler ────────────────────────────────────────
+    this.scale.on('resize',()=>{ this.cameras.main.setSize(this.scale.width,this.scale.height); });
+
+    setLoad('Gata!', 100);
+    setTimeout(()=>$('loading-screen').classList.add('hidden'), 400);
+
+    this.nearNPC=null; this.nearBuilding=null;
+  }
+
+  // ── Map generation ──────────────────────────────────────────
+  genMap(){
+    // Tile types: 0=grass,1=road,2=sidewalk,3=parking,4=water,5=darkgrass,6=building
+    const d=Array.from({length:MAP_H},()=>new Uint8Array(MAP_W));
+
+    // Base grass with variation
+    for(let y=0;y<MAP_H;y++) for(let x=0;x<MAP_W;x++) d[y][x]=Math.random()<0.18?5:0;
+
+    // Main horizontal roads
+    [[28,30],[14,15],[44,45]].forEach(([r1,r2])=>{
+      for(let x=0;x<MAP_W;x++) for(let y=r1;y<=r2;y++) d[y][x]=1;
+    });
+    // Main vertical roads
+    [[37,39],[20,21],[54,55]].forEach(([c1,c2])=>{
+      for(let y=0;y<MAP_H;y++) for(let x=c1;x<=c2;x++) d[y][x]=1;
+    });
+    // Sidewalks
+    [27,31,43,46].forEach(r=>{ for(let x=0;x<MAP_W;x++) d[r][x]=2; });
+    [36,40,53,56].forEach(c=>{ for(let y=0;y<MAP_H;y++) d[y][c]=2; });
+
+    // Parking (Mall area)
+    for(let x=40;x<=53;x++) for(let y=31;y<=43;y++) d[y][x]=3;
+
+    // Pond / water
+    for(let x=4;x<=11;x++) for(let y=4;y<=11;y++){
+      const dx=x-7.5, dy=y-7.5;
+      if(dx*dx+dy*dy<14) d[y][x]=4;
+    }
+
+    // Define buildings
+    this.buildings=[
+      {id:'flanco',  x:41,y:19,w:7,h:6,color:'#E30613',label:'FLANCO',  entry:{x:44,y:25}, interior:true},
+      {id:'atexl',   x:50,y:19,w:7,h:6,color:'#0044cc',label:'ATEXL',   entry:{x:53,y:25}, interior:true},
+      {id:'mage',    x:41,y:10,w:9,h:7,color:'#ff6600',label:'MagE',    entry:{x:45,y:17}, interior:true},
+      {id:'banca',   x:10,y:5, w:6,h:5,color:'#0a3a0a',label:'BANCĂ 🏦', entry:{x:13,y:10}},
+      {id:'cafenea', x:17,y:5, w:5,h:4,color:'#4a2800',label:'CAFENEA ☕',entry:{x:19,y:9}},
+      {id:'casa',    x:7, y:37,w:4,h:4,color:'#2a4a2a',label:'ACASĂ ⭐',  entry:{x:9, y:41}},
+      {id:'agentie', x:22,y:19,w:6,h:4,color:'#2a2a4a',label:'AGENȚIE',   entry:{x:25,y:23}},
+      {id:'depozit', x:58,y:34,w:10,h:8,color:'#3a3a3a',label:'DEPOZIT',  entry:{x:63,y:42}},
+      {id:'service', x:58,y:22,w:6,h:5,color:'#4a3a00',label:'SERVICE 📱', entry:{x:61,y:27}},
+      {id:'vulcan',  x:23,y:36,w:5,h:4,color:'#3a2a00',label:'VULCANIZARE',entry:{x:25,y:40}},
+    ];
+
+    // Mark building tiles
+    this.buildings.forEach(b=>{
+      for(let x=b.x;x<b.x+b.w&&x<MAP_W;x++)
+        for(let y=b.y;y<b.y+b.h&&y<MAP_H;y++) d[y][x]=6;
+    });
+
+    return d;
+  }
+
+  // ── Draw world to render texture ─────────────────────────────
+  drawWorld(){
+    const g=this.make.graphics({x:0,y:0,add:false});
+    const T=TILE;
+
+    const TCOL={
+      0:0x4a3a72,1:0x555566,2:0x888899,
+      3:0x60607a,4:0x2255aa,5:0x3a2a65,6:0x221e30
+    };
+
+    // Base tiles
+    for(let y=0;y<MAP_H;y++){
+      for(let x=0;x<MAP_W;x++){
+        const t=this.mapData[y][x];
+        g.fillStyle(TCOL[t]??TCOL[0],1);
+        g.fillRect(x*T,y*T,T,T);
+
+        // Water detail
+        if(t===4){
+          g.fillStyle(0x3377cc,0.4);
+          g.fillEllipse(x*T+T/2,y*T+T/2,T-4,T-4);
+        }
+        // Road line
+        if(t===1&&(x%4===0)){
+          g.fillStyle(0xffffff,0.25);
+          g.fillRect(x*T+5,y*T+T/2-1,6,2);
+        }
+        // Parking lines
+        if(t===3&&(x%3===0)){
+          g.lineStyle(1,0xffffff,0.3);
+          g.lineBetween(x*T,y*T,x*T,y*T+T);
+        }
+      }
+    }
+
+    // Trees (procedural, deterministic from seed)
+    const treeSeed=[
+      [3,14],[6,20],[12,18],[15,33],[18,25],[9,34],[25,8],[30,12],[35,8],
+      [8,48],[13,50],[19,48],[26,52],[32,50],[38,52],[42,50],[48,52],
+      [62,28],[65,25],[70,28],[73,22],[68,32],[72,48],[65,52],[70,50],
+      [5,32],[11,28],[16,30],[3,42],[8,44],[12,42],[4,22],[3,28],
+    ];
+    treeSeed.forEach(([tx,ty])=>{
+      if(this.mapData[ty]?.[tx]<=1){
+        // Shadow
+        g.fillStyle(0x2a5a2a,0.6); g.fillCircle(tx*T+8,ty*T+13,7);
+        // Trunk
+        g.fillStyle(0x5a3010,1); g.fillRect(tx*T+6,ty*T+10,4,6);
+        // Canopy
+        g.fillStyle(0x2a7a2a,1); g.fillCircle(tx*T+8,ty*T+7,9);
+        g.fillStyle(0x3a9a3a,1); g.fillCircle(tx*T+8,ty*T+5,7);
+        g.fillStyle(0x4aaa4a,0.7); g.fillCircle(tx*T+10,ty*T+4,5);
+      }
+    });
+
+    // Buildings
+    this.buildings.forEach(b=>{
+      const bx=b.x*T, by=b.y*T, bw=b.w*T, bh=b.h*T;
+      const col=hex2n(b.color);
+
+      // Drop shadow
+      g.fillStyle(0x000000,0.25); g.fillRect(bx+3,by+3,bw,bh);
+      // Body
+      g.fillStyle(col,1); g.fillRect(bx,by,bw,bh);
+      // Roof highlight
+      g.fillStyle(0xffffff,0.08); g.fillRect(bx,by,bw,4);
+      // Side shade
+      g.fillStyle(0x000000,0.15); g.fillRect(bx+bw-4,by,4,bh);
+
+      // Windows
+      g.fillStyle(0xaaddff,0.75);
+      for(let wx=bx+6;wx<bx+bw-10;wx+=12){
+        for(let wy=by+8;wy<by+bh-10;wy+=12){
+          g.fillRect(wx,wy,7,7);
+          g.fillStyle(0x88ccff,0.4); g.fillRect(wx+1,wy+1,3,3);
+          g.fillStyle(0xaaddff,0.75);
+        }
+      }
+
+      // Door
+      g.fillStyle(0x221100,1); g.fillRect(bx+bw/2-5,by+bh-10,10,10);
+      g.fillStyle(0xffdd88,1); g.fillRect(bx+bw/2+2,by+bh-6,2,2);
+
+      // Entry zone marker (yellow ground stripe)
+      g.fillStyle(0xFFD600,0.4);
+      g.fillRect(b.entry.x*T-8,b.entry.y*T,T+16,4);
+    });
+
+    // Building labels on top
+    this.buildings.forEach(b=>{
+      const bx=b.x*T, by=b.y*T, bw=b.w*T;
+      const labelCanvas=document.createElement('canvas');
+      labelCanvas.width=bw; labelCanvas.height=12;
+      const lctx=labelCanvas.getContext('2d');
+      lctx.fillStyle='rgba(0,0,0,0.7)'; lctx.fillRect(0,0,bw,12);
+      lctx.fillStyle='#FFD600';
+      lctx.font='bold 8px "Press Start 2P",monospace';
+      lctx.textAlign='center';
+      lctx.fillText(b.label,bw/2,9);
+      // We'll add labels as Phaser text objects later
+    });
+
+    const rt=this.add.renderTexture(0,0,WORLD_W,WORLD_H).setOrigin(0,0).setDepth(0);
+    rt.draw(g,0,0);
+    g.destroy();
+
+    // Building labels as text
+    this.buildings.forEach(b=>{
+      this.add.text(
+        b.x*T+(b.w*T)/2, b.y*T+4,
+        b.label,
+        {fontFamily:"'Press Start 2P',monospace",fontSize:'5px',color:'#FFD600',
+         backgroundColor:'#000000bb',padding:{x:3,y:2}}
+      ).setOrigin(0.5,0).setDepth(2);
+    });
+  }
+
+  // ── Physics walls ────────────────────────────────────────────
+  addWalls(){
+    // Buildings
+    this.buildings.forEach(b=>{
+      const body=this.walls.create(
+        b.x*TILE+(b.w*TILE)/2,
+        b.y*TILE+(b.h*TILE)/2,
+        null
+      ).setVisible(false).setActive(true);
+      body.setSize(b.w*TILE-2,b.h*TILE-2);
+      body.refreshBody();
+      body.buildingId=b.id;
+    });
+
+    // Water border
+    for(let x=4;x<=11;x++) for(let y=4;y<=11;y++){
+      if(this.mapData[y]?.[x]===4){
+        const body=this.walls.create(x*TILE+8,y*TILE+8,null).setVisible(false).setActive(true);
+        body.setSize(TILE,TILE); body.refreshBody();
+      }
+    }
+
+    // World edge walls (invisible)
+    [[WORLD_W/2,0,WORLD_W,4],[WORLD_W/2,WORLD_H,WORLD_W,4],
+     [0,WORLD_H/2,4,WORLD_H],[WORLD_W,WORLD_H/2,4,WORLD_H]].forEach(([x,y,w,h])=>{
+      const b=this.walls.create(x,y,null).setVisible(false).setActive(true);
+      b.setSize(w,h); b.refreshBody();
+    });
+  }
+
+  // ── Player sprite ────────────────────────────────────────────
+  createPlayer(){
+    const app=APPEARANCES[G.appearance]||APPEARANCES[0];
+
+    // Generate player spritesheet
+    const fw=16,fh=24,cols=4,rows=4;
+    this.textures.remove('player'); // always regenerate (appearance may change)
+    const g=this.make.graphics({x:0,y:0,add:false});
+    for(let dir=0;dir<rows;dir++){
+      for(let fr=0;fr<cols;fr++){
+        this.drawPlayerFrame(g,fr*fw,dir*fh,app,dir,fr);
+      }
+    }
+    g.generateTexture('player',fw*cols,fh*rows);
+    g.destroy();
+    // Add frame data so Phaser knows each cell
+    const tex=this.textures.get('player');
+    for(let row=0;row<rows;row++){
+      for(let col=0;col<cols;col++){
+        tex.add(row*cols+col, 0, col*fw, row*fh, fw, fh);
+      }
+    }
+
+    // Start just south of Flanco entry
+    const startX=44*TILE, startY=28*TILE;
+    this.player=this.physics.add.sprite(startX,startY,'player',0);
+    this.player.setSize(10,12).setOffset(3,12).setDepth(5).setCollideWorldBounds(true);
+    this.player.setMaxVelocity(200,200);
+
+    // Animations using named integer frames
+    [['walk_d',0],['walk_u',1],['walk_l',2],['walk_r',3]].forEach(([key,row])=>{
+      if(this.anims.exists(key)) this.anims.remove(key);
+      this.anims.create({
+        key, frameRate:8, repeat:-1,
+        frames:[0,1,2,3].map(col=>({key:'player',frame:row*cols+col}))
+      });
+    });
+
+    // Collision
+    this.physics.add.collider(this.player,this.walls);
+
+    this.playerDir='d';
+  }
+
+  drawPlayerFrame(g,ox,oy,app,dir,fr){
+    const skin=hex2n(app.skinTone||'#FDBCB4');
+    const hair=hex2n(app.hair);
+    const shirt=hex2n(app.shirt);
+    const walk=(fr===1||fr===3);
+    const lo1=walk?-2:0, lo2=walk?2:0;
+
+    // Shadow
+    g.fillStyle(0x000000,0.25); g.fillEllipse(ox+8,oy+23,12,4);
+    // Shoes
+    g.fillStyle(0x111111,1);
+    g.fillRect(ox+3,oy+22+lo1,4,2); g.fillRect(ox+9,oy+22-lo2,4,2);
+    // Legs
+    g.fillStyle(0x1a1a44,1);
+    g.fillRect(ox+3,oy+16,4,6+lo1); g.fillRect(ox+9,oy+16,4,6-lo2);
+    // Body
+    g.fillStyle(shirt,1); g.fillRect(ox+3,oy+9,10,8);
+    // Badge
+    g.fillStyle(0xFFD600,1); g.fillRect(ox+4,oy+10,5,2);
+    // Arms
+    const as=walk?(fr===1?1:-1):0;
+    g.fillStyle(shirt,1);
+    g.fillRect(ox+1,oy+10,2,5+as); g.fillRect(ox+13,oy+10,2,5-as);
+    g.fillStyle(skin,1);
+    g.fillRect(ox+1,oy+15+as,2,2); g.fillRect(ox+13,oy+15-as,2,2);
+    // Head
+    g.fillStyle(skin,1); g.fillRect(ox+4,oy+2,8,8);
+    // Hair
+    g.fillStyle(hair,1); g.fillRect(ox+4,oy+2,8,3);
+    if(app.gender==='F'){ g.fillRect(ox+4,oy+2,2,8); g.fillRect(ox+10,oy+2,2,8); }
+    // Eyes (only for front/sides)
+    if(dir!==1){
+      g.fillStyle(0x222222,1);
+      g.fillRect(ox+5,oy+6,2,2); g.fillRect(ox+9,oy+6,2,2);
+    }
+    // Backpack (walking away)
+    if(dir===1){ g.fillStyle(0x2255aa,1); g.fillRect(ox+1,oy+9,3,7); }
+  }
+
+  // ── NPCs ─────────────────────────────────────────────────────
+  createNPCs(){
+    const legendaryPositions=[
+      {data:LEGENDARI.vasile,  tx:44,ty:32},
+      {data:LEGENDARI.cornelia,tx:25,ty:17},
+      {data:LEGENDARI.gigel,   tx:52,ty:15},
+      {data:LEGENDARI.coste,   tx:61,ty:38},
+      {data:LEGENDARI.elena,   tx:30,ty:35},
+    ];
+    legendaryPositions.forEach(({data,tx,ty})=>this.spawnNPC(tx*TILE+8,ty*TILE+8,data));
+
+    // Random clients on map
+    const rndPositions=[
+      [34,32],[36,32],[39,32],[42,33],[47,33],[51,33],
+      [25,30],[22,25],[15,20],[12,30],[10,35],[18,40],
+      [28,40],[35,40],[60,38],[63,40],[66,35],[70,40],
+      [38,20],[35,25],[30,20],[45,20],[50,25],[55,20],
+    ];
+    rndPositions.forEach(([tx,ty])=>this.spawnNPC(tx*TILE+8,ty*TILE+8,makeClient()));
+  }
+
+  spawnNPC(wx,wy,data){
+    const isLeg=!!data.legendary;
+    const key='npc_'+data.id;
+
+    if(!this.textures.exists(key)){
+      const g=this.make.graphics({x:0,y:0,add:false});
+      this.drawNPCTex(g,data,isLeg);
+      g.generateTexture(key,16,24);
+      g.destroy();
+    }
+
+    const spr=this.physics.add.sprite(wx,wy,key,0).setDepth(4);
+    spr.setSize(10,12).setOffset(3,12).setCollideWorldBounds(true);
+
+    const npc={spr,data,isLeg,
+      spawnX:wx,spawnY:wy,
+      moveTimer:rnd(60,200),moveDelay:rnd(60,200),
+      vx:0,vy:0,
+      interacted:false,
+      exclaim:null,nameTag:null
+    };
+
+    if(isLeg){
+      npc.exclaim=this.add.text(wx,wy-22,'!',{
+        fontFamily:"'Press Start 2P',monospace",fontSize:'10px',color:'#FFD600',
+        stroke:'#000',strokeThickness:2
+      }).setDepth(8).setOrigin(0.5,1);
+      npc.nameTag=this.add.text(wx,wy-28,data.name,{
+        fontFamily:"'Press Start 2P',monospace",fontSize:'5px',color:'#FFD600',
+        backgroundColor:'#000000cc',padding:{x:3,y:2}
+      }).setDepth(8).setOrigin(0.5,1);
+      this.tweens.add({targets:npc.exclaim,scaleY:1.3,duration:500,yoyo:true,repeat:-1,ease:'Sine.InOut'});
+    }
+
+    this.physics.add.collider(spr,this.walls);
+    this.npcs.push(npc);
+    return npc;
+  }
+
+  drawNPCTex(g,data,isLeg){
+    const rig=data.rig||5;
+    let body=0x44aa44;
+    if(rig>=8) body=0xcc3333;
+    else if(rig>=5) body=0xaaaa22;
+    if(isLeg) body=0x9933cc;
+
+    const hairCols=[0x3d2200,0xcc9900,0x111111,0xcc4400,0x777777,0x442200];
+    const hIdx=(data.id||'').split('').reduce((s,c)=>s+c.charCodeAt(0),0)%hairCols.length;
+
+    g.fillStyle(0x000000,0.2); g.fillEllipse(8,23,12,4);
+    g.fillStyle(0x111111,1); g.fillRect(3,22,4,2); g.fillRect(9,22,4,2);
+    g.fillStyle(0x1a1a44,1); g.fillRect(3,16,4,6); g.fillRect(9,16,4,6);
+    g.fillStyle(body,1); g.fillRect(3,9,10,8);
+    if(isLeg){ g.fillStyle(0xFFD600,1); g.fillRect(5,10,6,2); } // special badge
+    g.fillStyle(0xFDBCB4,1); g.fillRect(4,2,8,8);
+    g.fillStyle(hairCols[hIdx],1); g.fillRect(4,2,8,3);
+    g.fillStyle(0x222222,1); g.fillRect(5,6,2,2); g.fillRect(9,6,2,2);
+  }
+
+  // ── Update loop ──────────────────────────────────────────────
+  update(){
+    if(G.dialogActive){ this.player.setVelocity(0,0); return; }
+    this.setPlayerVel();
+    this.updatePlayerAnim();
+    this.updateNPCs();
+    this.checkProximity();
+  }
+
+  setPlayerVel(){
+    const spd=100;
+    let vx=0,vy=0;
+    if(G.keys.left) vx=-spd;
+    else if(G.keys.right) vx=spd;
+    if(G.keys.up) vy=-spd;
+    else if(G.keys.down) vy=spd;
+    if(vx&&vy){ vx*=0.707; vy*=0.707; }
+    this.player?.setVelocity(vx,vy);
+    if(vx<0) this.playerDir='l';
+    else if(vx>0) this.playerDir='r';
+    else if(vy<0) this.playerDir='u';
+    else if(vy>0) this.playerDir='d';
+  }
+
+  updatePlayerAnim(){
+    const moving=Math.abs(this.player.body.velocity.x)>5||Math.abs(this.player.body.velocity.y)>5;
+    const animKey='walk_'+(this.playerDir||'d');
+    if(moving){
+      if(this.player.anims.currentAnim?.key!==animKey) this.player.play(animKey,true);
+    } else {
+      this.player.anims.stop();
+      // Idle frame: first frame of current direction (cols=4 per row)
+      const rowMap={d:0,u:4,l:8,r:12};
+      this.player.setFrame(rowMap[this.playerDir||'d']??0);
+    }
+  }
+
+  updateNPCs(){
+    const px=this.player.x, py=this.player.y;
+    this.npcs.forEach(npc=>{
+      if(npc.exclaim) npc.exclaim.setPosition(npc.spr.x,npc.spr.y-22);
+      if(npc.nameTag) npc.nameTag.setPosition(npc.spr.x,npc.spr.y-28);
+
+      npc.moveTimer--;
+      if(npc.moveTimer<=0){
+        npc.moveTimer=npc.moveDelay=rnd(80,220);
+        const d=dist({x:npc.spr.x,y:npc.spr.y},{x:npc.spawnX,y:npc.spawnY});
+        if(d>96){
+          npc.vx=Math.sign(npc.spawnX-npc.spr.x)*35;
+          npc.vy=Math.sign(npc.spawnY-npc.spr.y)*35;
+        } else {
+          const dirs=[[35,0],[-35,0],[0,35],[0,-35],[0,0],[0,0]];
+          const dir=pick(dirs); npc.vx=dir[0]; npc.vy=dir[1];
+        }
+        npc.spr.setVelocity(npc.vx,npc.vy);
+        if(npc.vx||npc.vy){
+          this.time.delayedCall(rnd(400,900),()=>{ if(npc.spr.body) npc.spr.setVelocity(0,0); });
+        }
+      }
+
+      // Face player when very close
+      if(dist({x:npc.spr.x,y:npc.spr.y},{x:px,y:py})<28)
+        npc.spr.setVelocity(0,0);
+    });
+  }
+
+  checkProximity(){
+    const px=this.player.x, py=this.player.y;
+    let nearNPC=null, nearBld=null;
+
+    for(const npc of this.npcs){
+      if(npc.interacted&&!npc.isLeg) continue;
+      if(dist({x:npc.spr.x,y:npc.spr.y},{x:px,y:py})<30){ nearNPC=npc; break; }
+    }
+
+    if(!nearNPC){
+      for(const b of this.buildings){
+        const ex=b.entry.x*TILE, ey=b.entry.y*TILE;
+        if(Math.abs(px-ex)<40&&Math.abs(py-ey)<40){ nearBld=b; break; }
+      }
+    }
+
+    this.nearNPC=nearNPC; this.nearBuilding=nearBld;
+
+    // Update prompt
+    const CW=this.scale.width, CH=this.scale.height;
+    if(nearNPC){
+      this.promptTxt.setText('[A] Vorbește cu '+(nearNPC.data.name||'clientul'))
+        .setPosition(8,CH-8).setOrigin(0,1).setVisible(true);
+    } else if(nearBld){
+      this.promptTxt.setText('[A] Intră în '+nearBld.label)
+        .setPosition(8,CH-8).setOrigin(0,1).setVisible(true);
+    } else {
+      this.promptTxt.setVisible(false);
+    }
+
+    // A key edge detection
+    const aDown=G.keys.a;
+    if(aDown&&!G.aWasDown) this.onA();
+    G.aWasDown=aDown;
+  }
+
+  onA(){
+    if(G.dialogActive) return;
+    if(this.nearNPC) this.talkToNPC(this.nearNPC);
+    else if(this.nearBuilding) this.enterBuilding(this.nearBuilding);
+  }
+
+  // ── NPC → Battle ─────────────────────────────────────────────
+  talkToNPC(npc){
+    if(G.dialogActive) return;
+    G.dialogActive=true;
+    this.player.setVelocity(0,0);
+    startBattle(npc, this);
+  }
+
+  enterBuilding(bld){
+    if(G.dialogActive) return;
+    if(bld.interior){
+      G.dialogActive=true;
+      $('minimap').style.visibility='hidden';
+      this.scene.pause();
+      this.scene.launch('ShopInterior',{bld});
+    } else {
+      openHireScreen(bld);
+    }
+  }
+
+  // ── Minimap ──────────────────────────────────────────────────
+  drawMinimap(){
+    const mc=$('minimap-canvas');
+    if(!mc||!this.player) return;
+    const mw=mc.width, mh=mc.height;
+    const ctx=mc.getContext('2d');
+    ctx.clearRect(0,0,mw,mh);
+
+    // Scale factor
+    const sx=mw/WORLD_W, sy=mh/WORLD_H;
+
+    // Draw simplified zones
+    ctx.fillStyle='#2a4a2a'; ctx.fillRect(0,0,mw,mh); // grass base
+
+    // Roads
+    ctx.fillStyle='#555';
+    [[28,30],[14,15],[44,45]].forEach(([r1,r2])=>ctx.fillRect(0,r1*TILE*sy,(mw),(r2-r1+1)*TILE*sy));
+    [[37,39],[20,21],[54,55]].forEach(([c1,c2])=>ctx.fillRect(c1*TILE*sx,0,(c2-c1+1)*TILE*sx,mh));
+
+    // Buildings
+    this.buildings.forEach(b=>{
+      ctx.fillStyle=b.color; ctx.globalAlpha=0.8;
+      ctx.fillRect(b.x*TILE*sx,b.y*TILE*sy,b.w*TILE*sx,b.h*TILE*sy);
+      ctx.globalAlpha=1;
+    });
+
+    // Water (pond)
+    ctx.fillStyle='#2255aa'; ctx.globalAlpha=0.7;
+    ctx.beginPath();
+    ctx.ellipse(7.5*TILE*sx,7.5*TILE*sy,4*TILE*sx,4*TILE*sy,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha=1;
+
+    // NPC dots
+    this.npcs.forEach(npc=>{
+      ctx.fillStyle=npc.isLeg?'#FFD600':'#88ff88';
+      ctx.fillRect(npc.spr.x*sx-1,npc.spr.y*sy-1,2,2);
+    });
+
+    // Player dot (blinking)
+    const blink=Math.floor(Date.now()/500)%2;
+    if(blink){
+      ctx.fillStyle='#ff4444';
+      ctx.fillRect(this.player.x*sx-2,this.player.y*sy-2,4,4);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SHOP INTERIOR SCENE
+// ═══════════════════════════════════════════════════════════════
+class ShopInteriorScene extends Phaser.Scene {
+  constructor(){ super({key:'ShopInterior'}); }
+
+  init(data){ this.bldData=data.bld; }
+
+  create(){
+    const bld=this.bldData;
+    const T=16, IW=40, IH=26;
+    const wW=IW*T, wH=IH*T; // 640×416
+    this.drawInterior(bld,wW,wH,T,IW,IH);
+    this.physics.world.setBounds(0,0,wW,wH);
+    this.walls=this.physics.add.staticGroup();
+    this.buildWalls(wW,wH,T,IW,IH);
+    const spawnX=IW/2*T, spawnY=(IH-4)*T;
+    this.player=this.physics.add.sprite(spawnX,spawnY,'player',0);
+    this.player.setSize(10,12).setOffset(3,12).setDepth(5).setCollideWorldBounds(true).setMaxVelocity(120,120);
+    this.physics.add.collider(this.player,this.walls);
+    this.intNPCs=[];
+    this.spawnNPCs(bld,T,IW,IH);
+    this.cameras.main.setBounds(0,0,wW,wH);
+    this.cameras.main.startFollow(this.player,true,0.1,0.1);
+    const CW=this.scale.width,CH=this.scale.height;
+    this.promptTxt=this.add.text(8,CH-8,'',{
+      fontFamily:"'Press Start 2P',monospace",fontSize:'6px',color:'#FFD600',
+      backgroundColor:'#000000dd',padding:{x:6,y:4}
+    }).setDepth(20).setScrollFactor(0).setOrigin(0,1).setVisible(false);
+    this.add.text(CW/2,4,'[ '+bld.label+' — INTERIOR ]',{
+      fontFamily:"'Press Start 2P',monospace",fontSize:'6px',
+      color:bld.color,backgroundColor:'#000000cc',padding:{x:6,y:4}
+    }).setDepth(20).setScrollFactor(0).setOrigin(0.5,0);
+    this.nearNPC=null; this.nearMgr=false; this.nearExit=false;
+    G.scene=this; G.dialogActive=false;
+  }
+
+  drawInterior(bld,wW,wH,T,IW,IH){
+    const g=this.make.graphics({x:0,y:0,add:false});
+    const brandHex=bld.color||'#333333';
+    const brandCol=parseInt(brandHex.replace('#',''),16);
+    // Floor
+    g.fillStyle(0x181828,1); g.fillRect(0,0,wW,wH);
+    g.lineStyle(1,0x252540,0.5);
+    for(let x=0;x<IW;x++) g.lineBetween(x*T,0,x*T,wH);
+    for(let y=0;y<IH;y++) g.lineBetween(0,y*T,wW,y*T);
+    // Walls
+    g.fillStyle(0x1e1e38,1);
+    g.fillRect(0,0,wW,2*T); g.fillRect(0,0,T,wH); g.fillRect(wW-T,0,T,wH);
+    // Brand stripe
+    g.fillStyle(brandCol,0.85); g.fillRect(0,0,wW,5);
+    // Windows
+    for(let wx=2;wx<IW-2;wx+=5){
+      g.fillStyle(0x4488cc,0.18); g.fillRect(wx*T+2,4,3*T-4,T-6);
+      g.fillStyle(0xaaddff,0.1); g.fillRect(wx*T+2,4,3*T-4,3);
+    }
+    // Shelves (3 rows)
+    [5,10,15].forEach(sy=>{
+      g.fillStyle(0x4a2e0a,1);
+      g.fillRect(T+2,sy*T,(IW-4)*T,3);
+      g.fillRect(T+2,(sy+1)*T-4,(IW-4)*T,4);
+      for(let dx=0;dx<IW-4;dx+=4){ g.fillStyle(0x3a1e00,1); g.fillRect((T+2)+dx*T,sy*T,2,T); }
+      const pCols=[0xE30613,0x0044cc,0xff6600,0x009900,0xaaaaaa,0xffcc00,0x660099,0x00aacc];
+      for(let px=T+4;px<(IW-3)*T;px+=T){
+        const pc=pCols[Math.floor(px/T)%pCols.length];
+        g.fillStyle(pc,0.8); g.fillRect(px,sy*T-T+4,T-4,T-4);
+        g.fillStyle(0xffffff,0.15); g.fillRect(px,sy*T-T+4,T-4,3);
+      }
+    });
+    // Counter
+    g.fillStyle(0x3a2510,1); g.fillRect(8*T,2*T+4,(IW-18)*T,T);
+    g.fillStyle(0x5a3a20,1); g.fillRect(8*T,2*T+4,(IW-18)*T,3);
+    const crX=IW/2*T-T;
+    g.fillStyle(0x222222,1); g.fillRect(crX,T+4,T+4,T-4);
+    g.fillStyle(0x3388cc,0.8); g.fillRect(crX+2,T+6,T,T-8);
+    // Exit door
+    const dX=(IW/2-3)*T, dY=(IH-2)*T;
+    g.fillStyle(0x1a0e00,1); g.fillRect(dX,dY,6*T,2*T);
+    g.fillStyle(0x7a3c00,0.8); g.fillRect(dX+4,dY+4,6*T-8,2*T-6);
+    g.fillStyle(brandCol,0.35); g.fillRect(dX+4,dY+4,6*T-8,4);
+    g.fillStyle(0xffd700,1); g.fillRect(dX+3*T,dY+T,6,6);
+    g.fillStyle(0xffff00,0.25);
+    g.fillTriangle(dX+3*T,dY+T/2,dX+3*T-8,dY+T/2-8,dX+3*T+8,dY+T/2-8);
+    const rt=this.add.renderTexture(0,0,wW,wH).setOrigin(0,0).setDepth(0);
+    rt.draw(g,0,0); g.destroy();
+  }
+
+  buildWalls(wW,wH,T,IW,IH){
+    const add=(x,y,w,h)=>{const b=this.walls.create(x,y,null).setVisible(false);b.setSize(w,h);b.refreshBody();};
+    add(wW/2,T,wW,2*T);
+    add(T/2,wH/2,T,wH);
+    add(wW-T/2,wH/2,T,wH);
+    const dW=6*T, dCX=wW/2;
+    add(dCX/2,wH-T/2,dCX-dW/2,T);
+    add(wW-(wW-dCX-dW)/2-dW/2,wH-T/2,wW-dCX-dW,T);
+    [5,10,15].forEach(sy=>{ add(wW/2,(sy+0.5)*T,(IW-4)*T,T); });
+    add(wW/2,2.5*T+4,(IW-18)*T,T);
+  }
+
+  spawnNPCs(bld,T,IW,IH){
+    const zones=[{x:5,y:7},{x:10,y:7},{x:18,y:7},{x:25,y:7},{x:5,y:12},{x:15,y:12},{x:28,y:12},{x:8,y:18},{x:20,y:18}];
+    const nClients=Math.min(4+Math.floor(G.nivel/5),6);
+    const tints={pasiv:0x8888ff,nehotarat:0xffaa44,emotional:0xff8888,analitic:0x88ff88};
+    for(let i=0;i<nClients;i++){
+      const z=zones[i%zones.length];
+      const spawnX=(z.x+Math.random()*2)*T, spawnY=(z.y+Math.random())*T;
+      const rig=3+rnd(0,3);
+      const obiectieType=pick(Object.keys(OBIECTII));
+      const ob=OBIECTII[obiectieType];
+      const cd={
+        id:'in_'+bld.id+'_'+i+'_'+Date.now(),
+        name:pick(NAMES), persona:pick(['pasiv','nehotarat','emotional','analitic']),
+        rig, obiectieType, replica:pick(ob||['Hmm...care e mai bun?']),
+        hpMax:35+rig*10, reward:{bani:100+rig*25+rnd(0,80),xp:10+rig*4},
+        indoor:true, magazin:bld.id, legendary:false
+      };
+      const spr=this.physics.add.sprite(spawnX,spawnY,'player',0);
+      spr.setTint(tints[cd.persona]||0xaaaaaa);
+      spr.setSize(10,12).setOffset(3,12).setDepth(4).setMaxVelocity(40,40);
+      this.physics.add.collider(spr,this.walls);
+      const nameTag=this.add.text(spawnX,spawnY-16,cd.name,{
+        fontFamily:"'Press Start 2P',monospace",fontSize:'4px',
+        color:'#FFD600',backgroundColor:'#000000aa',padding:{x:2,y:1}
+      }).setDepth(6).setOrigin(0.5,1);
+      const exclaim=this.add.text(spawnX,spawnY-28,'!',{
+        fontFamily:"'Press Start 2P',monospace",fontSize:'8px',color:'#FFD600'
+      }).setDepth(7).setOrigin(0.5,1);
+      this.tweens.add({targets:exclaim,y:'-=3',duration:500,yoyo:true,repeat:-1});
+      this.intNPCs.push({spr,data:cd,nameTag,exclaim,isLeg:false,interacted:false,
+        patrol:{spawnX,spawnY,tx:spawnX,ty:spawnY,timer:rnd(0,90)}});
+    }
+    // Manager
+    const mgrSpr=this.physics.add.sprite(IW/2*T,2.2*T,'player',0);
+    mgrSpr.setTint(0xffd700).setSize(10,12).setOffset(3,12).setDepth(4);
+    const mgrTag=this.add.text(IW/2*T,2.2*T-16,'👔 MANAGER',{
+      fontFamily:"'Press Start 2P',monospace",fontSize:'4px',
+      color:'#FFD600',backgroundColor:'#000000aa',padding:{x:2,y:1}
+    }).setDepth(6).setOrigin(0.5,1);
+    this.managerNPC={spr:mgrSpr,data:{id:'mgr_'+bld.id,name:'Manager '+bld.label,
+      persona:'analitic',rig:1,obiectieType:'incredere',
+      replica:'Salut! Cauți ceva anume?',hpMax:10,reward:{bani:0,xp:2},
+      isManager:true,magazin:bld.id},nameTag:mgrTag,exclaim:null,isLeg:false,interacted:false};
+  }
+
+  update(){
+    if(G.dialogActive){this.player.setVelocity(0,0);return;}
+    const spd=100; let vx=0,vy=0;
+    if(G.keys.left)vx=-spd;else if(G.keys.right)vx=spd;
+    if(G.keys.up)vy=-spd;else if(G.keys.down)vy=spd;
+    this.player.setVelocity(vx,vy);
+    if(vx<0)this.player.anims.play('walk_l',true);
+    else if(vx>0)this.player.anims.play('walk_r',true);
+    else if(vy<0)this.player.anims.play('walk_u',true);
+    else if(vy>0)this.player.anims.play('walk_d',true);
+    else this.player.anims.stop();
+    // Patrol
+    this.intNPCs.forEach(npc=>{
+      if(npc.interacted){npc.spr.setVelocity(0,0);return;}
+      const p=npc.patrol; p.timer--;
+      if(p.timer<=0){p.timer=60+rnd(0,90);p.tx=p.spawnX+(Math.random()-0.5)*3*16;p.ty=p.spawnY+(Math.random()-0.5)*2*16;}
+      const dx=p.tx-npc.spr.x,dy=p.ty-npc.spr.y,d=Math.hypot(dx,dy);
+      if(d>4)npc.spr.setVelocity(dx/d*32,dy/d*32);else npc.spr.setVelocity(0,0);
+      npc.nameTag.setPosition(npc.spr.x,npc.spr.y-16);
+      if(npc.exclaim)npc.exclaim.setPosition(npc.spr.x,npc.spr.y-28);
+    });
+    if(this.managerNPC)this.managerNPC.nameTag.setPosition(this.managerNPC.spr.x,this.managerNPC.spr.y-16);
+    // Detection
+    const px=this.player.x,py=this.player.y;
+    this.nearNPC=null;
+    for(const npc of this.intNPCs){
+      if(npc.interacted||G.npcConvinsi[npc.data.id])continue;
+      if(Math.hypot(npc.spr.x-px,npc.spr.y-py)<32){this.nearNPC=npc;break;}
+    }
+    this.nearMgr=this.managerNPC&&Math.hypot(this.managerNPC.spr.x-px,this.managerNPC.spr.y-py)<36;
+    this.nearExit=py>(26-3)*16;
+    if(this.nearNPC)this.promptTxt.setText('[A] Abordează '+this.nearNPC.data.name).setVisible(true);
+    else if(this.nearMgr)this.promptTxt.setText('[A] Vorbește cu Managerul').setVisible(true);
+    else if(this.nearExit)this.promptTxt.setText('[B] Ieși din '+this.bldData.label).setVisible(true);
+    else this.promptTxt.setVisible(false);
+    const aDown=G.keys.a;
+    if(aDown&&!G.aWasDown)this.onA();
+    G.aWasDown=aDown;
+    if(G.keys.b&&this.nearExit)this.exitInterior();
+  }
+
+  onA(){
+    if(G.dialogActive)return;
+    if(this.nearNPC)this.startInteriorBattle(this.nearNPC);
+    else if(this.nearMgr){G.dialogActive=true;openHireScreen(this.bldData);}
+    else if(this.nearExit)this.exitInterior();
+  }
+
+  startInteriorBattle(npc){
+    if(G.dialogActive)return;
+    G.dialogActive=true;
+    this.player.setVelocity(0,0);
+    const loc=(G.job===this.bldData.id)?'indoor_own':'indoor_other';
+    startBattle(npc,this,loc);
+  }
+
+  exitInterior(){
+    G.dialogActive=false;
+    this.scene.stop();
+    this.scene.resume('World');
+    const ws=this.scene.get('World');
+    G.scene=ws;
+    $('minimap').style.visibility='visible';
+    if(ws&&ws.player)ws.player.setVelocity(0,0);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  BATTLE SYSTEM
+// ═══════════════════════════════════════════════════════════════
+
+const BATTLE = {
+  active:false, npcRef:null, worldScene:null,
+  client:null,
+  clientHP:0, clientHPMax:0,
+  playerMoral:100,
+  voucherUsed:false, sefCallsInBattle:0, argsUsed:0,
+  elegantSale:true,
+  demoTimer:null, demoSelected:[], demoCorrect:[], demoFeats:null,
+  timeLimitSec:60, timeLeft:60, clientAnger:0, battleTimer:null, location:'outdoor',
+};
+
+const STORE_CFG = {
+  flanco:{label:'FLANCO',color:'#E30613',comision:0.02,salariu:3000},
+  atexl: {label:'ATEXL', color:'#0044cc',comision:0.025,salariu:3500},
+  mage:  {label:'MagE',  color:'#ff6600',comision:0.03, salariu:4500}
+};
+
+// Product features per objection type (for Demonstrează mini-game)
+// DEMO_FEATURES: caracteristici corecte = fapte reale per magazin
+const DEMO_FEATURES_STORE = {
+  flanco:{
+    pret:     {correct:['Retur 45 zile','Oney 3-4 rate','Garanție extinsă'],    wrong:['Culori variate','App dedicată','Expediere prioritară']},
+    calitate: {correct:['Certificare CE','Service în magazin','Reparație acasă'],wrong:['4 culori disponibile','Ambalaj premium','Livrare rapidă']},
+    comparatie:{correct:['45 zile vs 14 Altex','Service intern','Livrare 200 lei'],wrong:['Cel mai popular','Design modern','Baterie mare']},
+    incredere:{correct:['Retur 45 zile','Garanție 2 ani','Service intern'],    wrong:['Design slim','Ecran AMOLED','Stocare 256GB']},
+    urgenta:  {correct:['În stoc acum','Ridicare imediată','Oney aprobare 5 min'],wrong:['Livrare expres','Online disponibil','Rezervare rapidă']}
+  },
+  atexl:{
+    pret:     {correct:['2× Diferența','Rate Credex','Extragaranție'],         wrong:['App dedicată','Ambalaj original','Livrare rapidă']},
+    calitate: {correct:['Certificare CE','Extragaranție','2× Diferența'],      wrong:['Design premium','4 culori','Model recent']},
+    comparatie:{correct:['2× Diferența','Credex la raft','Rezervă Ridică'],    wrong:['Cel mai popular','Rating înalt','Baterie puternică']},
+    incredere:{correct:['2× Diferența','Garanție 2 ani','Extragaranție'],      wrong:['Design slim','Ecran vibrant','Stocare mare']},
+    urgenta:  {correct:['Rezervă online','Ridicare 30 min','Credex 2 min'],   wrong:['Livrare expres','Rating bun','Disponibil acum']}
+  },
+  mage:{
+    pret:     {correct:['Genius 60 zile retur','Rate Wallet','3M produse'],    wrong:['Ambalaj premium','Culori variate','App dedicată']},
+    calitate: {correct:['Garanție Plus','Recenzii verificate','EasyBox retur'],wrong:['Design modern','Model 2024','Baterie mare']},
+    comparatie:{correct:['60 zile Genius','Instant Money Back','EasyBox 24/7'],wrong:['Cel mai popular','Rating înalt','Stoc mare']},
+    incredere:{correct:['Money Back 30 min','EasyBox 24/7','Genius 60 zile'], wrong:['Design slim','Ecran AMOLED','Stocare mare']},
+    urgenta:  {correct:['EasyBox 2 ore','Livrare azi','Wallet instant'],       wrong:['Rating bun','Model nou','Disponibil online']}
+  }
+};
+function getDemoFeatures(obiectieType){
+  const mag=G.job||G.magazin;
+  const store=DEMO_FEATURES_STORE[mag]||DEMO_FEATURES_STORE.flanco;
+  return store[obiectieType]||store.pret;
+}
+
+// Arguments per objection (for Argumentează sub-menu)
+// ARGS: argumente de luptă cu fapte reale per magazin
+const STORE_ARGS = {
+  flanco:{
+    pret:[
+      {text:'La Flanco ai 45 zile retur — de 3 ori mai mult ca alții.',  keyword:'45 zile'},
+      {text:'Oney: 3-4 rate fără dobândă, prima acum, suma 500–2500 RON.',  keyword:'oney'},
+      {text:'Garanția Extinsă Flanco: 1-2 ani extra față de lege.',       keyword:'garanție extinsă'},
+      {text:'Prețul include servicii gratuite: livrare + instalare la domiciliu.', keyword:'instalare'},
+      {text:'Plata în rate Oney, aprobată în 5 minute pe telefon.',        keyword:'rate oney'},
+    ],
+    calitate:[
+      {text:'Garanție legală 2 ani — service gestionat direct de Flanco.',keyword:'garanție'},
+      {text:'Reparație electrocasnice mari la domiciliu, vin tehnicieni.', keyword:'reparație acasă'},
+      {text:'Produsul are certificare CE — standard european obligatoriu.',keyword:'certificare'},
+      {text:'Toate produsele vin verificate și testate înainte de livrare.',keyword:'verificat'},
+      {text:'Service autorizat Flanco — nu trimiți produsul undeva necunoscut.',keyword:'service autorizat'},
+    ],
+    comparatie:[
+      {text:'45 zile retur față de 14 Altex — testezi fără griji acasă.',  keyword:'45 zile'},
+      {text:'Aduci produsul defect la noi în magazin, nu cauți tu service.',keyword:'service'},
+      {text:'Livrare gratuită de la 200 lei sau ridici gratis din magazin.',keyword:'livrare'},
+      {text:'45 zile retur vs 30 eMAG — Flanco bate și colosul digital.',  keyword:'retur flanco'},
+      {text:'Personalul nostru cunoaște fiecare produs — nu chatbot, om real.',keyword:'personal'},
+    ],
+    incredere:[
+      {text:'Returnezi 45 zile fără întrebări — testezi liniștit acasă.',  keyword:'retur'},
+      {text:'Garanția gestionată intern: tu aduci, noi rezolvăm.',         keyword:'garanție'},
+      {text:'Oney: 3-4 rate, prima plătită acum — aprobare în 5 min.',     keyword:'oney'},
+      {text:'Flanco activă de 30 de ani pe piața românească — ne cunoști.', keyword:'experiență'},
+      {text:'Recenzii verificate pe site — transparență totală înainte de cumpărare.',keyword:'recenzii'},
+    ],
+    urgenta:[
+      {text:'E în stoc acum — pregătim factura și pleci în 10 minute.',   keyword:'stoc'},
+      {text:'Ridicare imediată din magazin — zero așteptare curier.',      keyword:'ridicare'},
+      {text:'Plată în rate aprobată instant, pleci azi cu produsul.',      keyword:'rate instant'},
+      {text:'Dacă comanzi acum înainte de 14:00, ai livrare azi.',        keyword:'livrare azi'},
+      {text:'Stocul e limitat — am verificat acum, mai sunt 2 bucăți.',   keyword:'stoc limitat'},
+    ]
+  },
+  atexl:{
+    pret:[
+      {text:'2× Diferența: dacă găsești mai ieftin, plătim DUBLU diferența.',keyword:'2x diferența'},
+      {text:'Rate prin Credex IFN — aprobare directă la raft, fără bancă.',  keyword:'credex'},
+      {text:'Cel mai mic preț garantat matematic prin politica noastră.',     keyword:'preț garantat'},
+      {text:'Program Fidelitate Altex: puncte la fiecare cumpărare, reduceri la retur.',keyword:'fidelitate'},
+      {text:'Altex Club: membri primesc prețuri speciale și acces early deals.',keyword:'altex club'},
+    ],
+    calitate:[
+      {text:'Extragaranție Altex: 1-2 ani extra față de garanția legală.',    keyword:'extragaranție'},
+      {text:'Produsul are certificare CE și garantăm conformitatea.',          keyword:'certificare'},
+      {text:'Dacă se strică în garanție, îl înlocuim sau rambursăm.',         keyword:'înlocuire'},
+      {text:'Testăm produsele returnate — nu vindem defecte drept noi.',      keyword:'testare'},
+      {text:'Service autorizat Altex cu piese originale de la producător.',    keyword:'piese originale'},
+    ],
+    comparatie:[
+      {text:'2× Diferența — imposibil să găsești mai ieftin și să pierzi.',   keyword:'2x'},
+      {text:'Rezervă online, ridici instant din magazin — fără livrare.',      keyword:'rezervă ridică'},
+      {text:'Credex IFN la raft — rate fără card bancar, aprobare 2 minute.',  keyword:'credex'},
+      {text:'Extragaranție Altex bate garanția standard Flanco sau eMAG.',     keyword:'extragaranție vs'},
+      {text:'Altex: cea mai mare rețea fizică din România — 100+ magazine.',   keyword:'rețea'},
+    ],
+    incredere:[
+      {text:'Garanție 2 ani + Extragaranție pentru protecție totală.',        keyword:'garanție'},
+      {text:'2× Diferența — niciodată nu plătești mai mult decât piața.',     keyword:'preț'},
+      {text:'Retur 14 zile în stare originală conform legii consumatorului.',  keyword:'retur'},
+      {text:'Altex.ro: peste 3 milioane de clienți activi — nu ești primul.', keyword:'clienți'},
+      {text:'Vânzători certificați — fiecare cunoaște produsul înainte să-l recomande.',keyword:'certificat'},
+    ],
+    urgenta:[
+      {text:'Rezervi online acum, ridici în 30 minute din magazin.',          keyword:'rezervare'},
+      {text:'Credex aprobat în 2 minute la casă — pleci cu produsul azi.',    keyword:'credex rapid'},
+      {text:'E în stoc confirmat — verificat în timp real pe platformă.',     keyword:'stoc'},
+      {text:'Comandă acum și îl ai în magazin în maximum 2 ore.',             keyword:'2 ore'},
+      {text:'Promoția expiră azi la miezul nopții — prețul crește mâine.',    keyword:'promoție expira'},
+    ]
+  },
+  mage:{
+    pret:[
+      {text:'Genius: livrare gratuită + 60 zile retur pentru abonați.',       keyword:'genius'},
+      {text:'Rate eMAG Wallet: până la 12 rate din contul tău, fără bancă.',  keyword:'wallet'},
+      {text:'3 milioane produse — cel mai mic preț prin competiție reală.',   keyword:'3 milioane'},
+      {text:'eMAG compară prețuri în timp real — dacă e mai ieftin îl afișăm.',keyword:'comparare preț'},
+      {text:'Genius Gold: cashback 5% la orice comandă peste 500 RON.',       keyword:'cashback genius'},
+    ],
+    calitate:[
+      {text:'Garanție Plus eMAG: 1-2 ani extra, gestionat 100% digital.',    keyword:'garanție plus'},
+      {text:'Recenzii verificate de cumpărători reali — transparență totală.',keyword:'recenzii'},
+      {text:'Returnezi simplu prin EasyBox — fără explicații, fără curieri.',  keyword:'easybox'},
+      {text:'Produse verificate eMAG: 0% defecte la livrare sau schimb gratis.',keyword:'verificat emag'},
+      {text:'Raport detaliat calitate produs disponibil la fiecare listing.',  keyword:'raport calitate'},
+    ],
+    comparatie:[
+      {text:'30 zile retur standard; 60 zile Genius — dublu față de Altex.',  keyword:'60 zile'},
+      {text:'Instant Money Back: banii pe card în 30 minute, nu 5-7 zile.',   keyword:'instant money'},
+      {text:'EasyBox 24/7 lângă tine — returnezi la 3 noaptea, zero stres.',  keyword:'easybox'},
+      {text:'eMAG: 3M+ produse vs 100k Flanco — găsești garantat ce cauți.',  keyword:'produse emag'},
+      {text:'Livrare gratuită Genius vs 200 lei minim Flanco/Altex.',         keyword:'livrare genius'},
+    ],
+    incredere:[
+      {text:'Instant Money Back — banii înapoi în MAX 30 minute după retur.', keyword:'30 minute'},
+      {text:'EasyBox 24/7: scanezi QR, pui produsul, banii vin singuri.',     keyword:'easybox'},
+      {text:'Genius: 60 zile retur + livrare gratuită nelimitată.',           keyword:'genius'},
+      {text:'eMAG activ de 24 de ani — cel mai de încredere retailer digital.',keyword:'24 ani'},
+      {text:'Protecție cumpărător 100% — dacă nu ești mulțumit, rezolvăm.',   keyword:'protecție'},
+    ],
+    urgenta:[
+      {text:'Livrare aceeași zi sau a doua zi — cea mai rapidă din piață.',   keyword:'livrare rapidă'},
+      {text:'Ridici de la EasyBox în 2 ore după comandă, 24/7.',              keyword:'easybox rapid'},
+      {text:'Plată instant prin eMAG Wallet — fără card fizic, fără bancă.',  keyword:'wallet instant'},
+      {text:'Same-day delivery București: comandă până la 15:00, primești azi.',keyword:'same day'},
+      {text:'Stoc actualizat la minut — nu mai cauți, e confirmat disponibil.',keyword:'stoc live'},
+    ]
+  }
+};
+function getArgs(obiectieType){
+  const mag=G.job||G.magazin;
+  const store=STORE_ARGS[mag]||STORE_ARGS.flanco;
+  const all=store[obiectieType]||store.pret;
+  // Shuffle all and return 3 — different each time
+  return [...all].sort(()=>Math.random()-0.5).slice(0,3);
+}
+
+// ─── Draw sprites on canvas elements ────────────────────────────
+function drawClientSprite(canvasEl, client){
+  const ctx=canvasEl.getContext('2d');
+  ctx.clearRect(0,0,64,80);
+  const rig=client.rig||client.rigiditate||5;
+  const isLeg=client.legendary||false;
+
+  // Body color by rigiditate
+  let bodyHue=120; // green
+  if(rig>=8) bodyHue=0;       // red
+  else if(rig>=5) bodyHue=50; // yellow
+  if(isLeg) bodyHue=280;      // purple
+
+  const bodyCol=`hsl(${bodyHue},60%,35%)`;
+  const accentCol=`hsl(${bodyHue},80%,50%)`;
+
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.3)';
+  ctx.ellipse(32,76,20,6,0,0,Math.PI*2); ctx.fill();
+
+  // Shoes
+  ctx.fillStyle='#111';
+  ctx.fillRect(14,66,14,6); ctx.fillRect(36,66,14,6);
+
+  // Legs
+  ctx.fillStyle='#2a2a5a';
+  ctx.fillRect(14,52,14,16); ctx.fillRect(36,52,14,16);
+
+  // Body
+  ctx.fillStyle=bodyCol;
+  ctx.fillRect(12,30,40,24);
+  ctx.fillStyle=accentCol;
+  ctx.fillRect(12,30,40,6); // collar
+
+  // Arms
+  ctx.fillStyle=bodyCol;
+  ctx.fillRect(2,32,10,18); ctx.fillRect(52,32,10,18);
+  ctx.fillStyle='#FDBCB4';
+  ctx.fillRect(2,48,10,6); ctx.fillRect(52,48,10,6);
+
+  // Head
+  ctx.fillStyle='#FDBCB4';
+  ctx.fillRect(18,10,28,22);
+
+  // Hair (color by id hash)
+  const hairCols=['#3d2200','#cc9900','#111','#cc4400','#777','#442200'];
+  const hIdx=(client.id||'').split('').reduce((s,c)=>s+c.charCodeAt(0),0)%hairCols.length;
+  ctx.fillStyle=hairCols[hIdx];
+  ctx.fillRect(18,10,28,7);
+  if(client.persona==='analitic'){ ctx.fillStyle='rgba(200,230,255,0.5)'; ctx.fillRect(20,20,8,4); } // glasses
+
+  // Eyes — expression by rigiditate
+  ctx.fillStyle='#222';
+  ctx.fillRect(22,21,5,5); ctx.fillRect(37,21,5,5);
+  if(rig>=8){
+    // angry eyebrows
+    ctx.fillStyle=hairCols[hIdx];
+    ctx.fillRect(20,18,7,3); ctx.fillRect(37,18,7,3);
+  } else if(rig<=3){
+    // happy arc mouth
+    ctx.fillStyle='#c47';
+    ctx.beginPath(); ctx.arc(32,29,5,0,Math.PI); ctx.fill();
+  }
+  // Mouth neutral/frown
+  ctx.fillStyle='#c47';
+  if(rig>=6) ctx.fillRect(26,29,12,3);
+  else ctx.fillRect(26,28,12,2);
+
+  // Legendary badge
+  if(isLeg){
+    ctx.fillStyle='#FFD600';
+    ctx.beginPath(); ctx.moveTo(32,2); ctx.lineTo(35,8); ctx.lineTo(42,8);
+    ctx.lineTo(36,12); ctx.lineTo(38,18); ctx.lineTo(32,14);
+    ctx.lineTo(26,18); ctx.lineTo(28,12); ctx.lineTo(22,8);
+    ctx.lineTo(29,8); ctx.closePath(); ctx.fill();
+  }
+}
+
+function drawPlayerBattleSprite(canvasEl){
+  const app=APPEARANCES[G.appearance]||APPEARANCES[0];
+  const ctx=canvasEl.getContext('2d');
+  ctx.clearRect(0,0,40,52);
+  const skin=app.skinTone||'#FDBCB4';
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.ellipse(20,50,14,4,0,0,Math.PI*2); ctx.fill();
+  // Shoes
+  ctx.fillStyle='#111'; ctx.fillRect(8,44,8,4); ctx.fillRect(24,44,8,4);
+  // Legs
+  ctx.fillStyle='#1a1a4a'; ctx.fillRect(8,33,8,12); ctx.fillRect(24,33,8,12);
+  // Body
+  ctx.fillStyle=app.shirt; ctx.fillRect(7,20,26,14);
+  ctx.fillStyle='#FFD600'; ctx.fillRect(9,22,10,4); // badge
+  // Arms
+  ctx.fillStyle=app.shirt; ctx.fillRect(2,22,5,12); ctx.fillRect(33,22,5,12);
+  ctx.fillStyle=skin; ctx.fillRect(2,33,5,4); ctx.fillRect(33,33,5,4);
+  // Head
+  ctx.fillStyle=skin; ctx.fillRect(12,6,16,14);
+  // Hair
+  ctx.fillStyle=app.hair; ctx.fillRect(12,6,16,5);
+  if(app.gender==='F'){ ctx.fillRect(12,6,4,14); ctx.fillRect(24,6,4,14); }
+  // Eyes
+  ctx.fillStyle='#222'; ctx.fillRect(14,13,4,4); ctx.fillRect(22,13,4,4);
+}
+
+// ─── Start battle ────────────────────────────────────────────────
+function startBattle(npcRef, worldScene, location){
+  const client=npcRef.data;
+  BATTLE.active=true;
+  BATTLE.npcRef=npcRef;
+  BATTLE.worldScene=worldScene;
+  BATTLE.client=client;
+  BATTLE.clientHP=client.hp||client.hpMax||(50+(client.rig||5)*15);
+  BATTLE.clientHPMax=BATTLE.clientHP;
+  BATTLE.playerMoral=G.moral;
+  BATTLE.voucherUsed=false;
+  BATTLE.sefCallsInBattle=0;
+  BATTLE.argsUsed=0;
+  BATTLE.elegantSale=true;
+
+  // Pre-shuffle demo features once per battle so retries show same buttons
+  const df=getDemoFeatures(client.obiectieType);
+  BATTLE.demoFeats=[...df.correct.map(f=>({t:f,ok:true})),...df.wrong.map(f=>({t:f,ok:false}))];
+  BATTLE.demoFeats.sort(()=>Math.random()-0.5);
+  BATTLE.demoCorrect=df.correct;
+
+  BATTLE.location=location||'outdoor';
+  BATTLE.clientAnger=0;
+  BATTLE.timeLimitSec=getBattleTimeLimit();
+  BATTLE.timeLeft=BATTLE.timeLimitSec;
+  clearInterval(BATTLE.battleTimer);
+  BATTLE.battleTimer=setInterval(()=>{
+    if(!BATTLE.active){clearInterval(BATTLE.battleTimer);return;}
+    BATTLE.timeLeft=Math.max(0,BATTLE.timeLeft-0.25);
+    const pct=BATTLE.timeLeft/BATTLE.timeLimitSec*100;
+    const fill=$('bt-client-timer');
+    if(fill){fill.style.width=pct+'%';fill.style.background=pct>50?'#00cc44':pct>25?'#ffaa00':'#ff2200';}
+    const secs=$('bt-secs');
+    if(secs) secs.textContent=Math.ceil(BATTLE.timeLeft)+'s';
+    if(BATTLE.timeLeft<=0){clearInterval(BATTLE.battleTimer);BATTLE.battleTimer=null;battleLose('timeout');}
+  },250);
+  updateAngerDisplay();
+  // Keep D-pad controls visible; only hide minimap during battle
+  $('minimap').style.visibility='hidden';
+
+  // Fill UI
+  $('bc-name').textContent=client.name||'Client';
+  $('bc-type').textContent=(client.persona||'?')+' · '+(client.obiectieType||'preț');
+  $('bp-name').textContent=G.name;
+  $('bp-niv').textContent='Niv.'+G.nivel+' · Persuasiune '+G.persuasiune+'/10';
+  $('battle-voucher-info').textContent='Voucher: NU  |  Sună Șeful: '+(3-G.sefCallsToday)+'/3 rămase';
+
+  drawClientSprite($('bc-sprite'), client);
+  drawPlayerBattleSprite($('bp-sprite'));
+
+  updateBattleHP(); updateBattleMoral();
+
+  typeText('bc-dialog-txt', client.replica||'...', 30, null);
+
+  $('bt-result').classList.add('hidden');
+  closeBattleSubmenu();
+
+  $('battle-screen').classList.remove('hidden');
+  setBattlePrompt('Ce faci?');
+  showBattleActions(true);
+}
+
+function updateBattleHP(){
+  const pct=Math.max(0,BATTLE.clientHP/BATTLE.clientHPMax*100);
+  const fill=$('bc-hp-fill');
+  fill.style.width=pct+'%';
+  // Color transition
+  if(pct>50) fill.style.background='linear-gradient(90deg,#228800,#44ff00)';
+  else if(pct>20) fill.style.background='linear-gradient(90deg,#886600,#ffcc00)';
+  else fill.style.background='linear-gradient(90deg,#880000,#ff2200)';
+  $('bc-hp-txt').textContent=Math.max(0,BATTLE.clientHP)+'/'+BATTLE.clientHPMax;
+}
+
+function updateBattleMoral(){
+  $('bp-moral-fill').style.width=Math.max(0,BATTLE.playerMoral)+'%';
+}
+
+function setBattlePrompt(txt){ $('bt-prompt').textContent=txt; }
+function showBattleActions(on){ $('bt-actions').style.display=on?'grid':'none'; }
+
+function closeBattleSubmenu(){
+  $('bt-sub-menu').innerHTML='';
+  $('bt-sub-menu').classList.add('hidden');
+  $('bt-voucher-zone').classList.add('hidden');
+  $('bt-demo-zone').classList.add('hidden');
+  showBattleActions(true);
+  setBattlePrompt('Ce faci?');
+}
+
+// ─── Actions ─────────────────────────────────────────────────────
+function bAction(type){
+  if(!BATTLE.active) return;
+  showBattleActions(false);
+  if(type==='argumenteaza') bArgMenu();
+  else if(type==='demonstreaza') bDemoGame();
+  else if(type==='voucher') bVoucherMenu();
+  else if(type==='suna_seful') bSunaSeful();
+  else if(type==='fugi') bFugi();
+}
+
+// Argumentează → sub-menu cu 3 argumente + Groq call
+function bArgMenu(){
+  const client=BATTLE.client;
+  const args=getArgs(client.obiectieType);
+  const sub=$('bt-sub-menu');
+  sub.innerHTML='';
+  setBattlePrompt('Alege argumentul:');
+  showBattleActions(false);
+
+  args.forEach((a,i)=>{
+    const btn=document.createElement('div');
+    btn.className='bsub-btn';
+    btn.textContent=['A','B','C'][i]+'. '+a.text;
+    btn.onclick=()=>{ sub.innerHTML=''; sub.classList.add('hidden'); bDoArgument(a); };
+    sub.appendChild(btn);
+  });
+
+  const back=document.createElement('div');
+  back.className='bsub-btn';
+  back.textContent='← Înapoi';
+  back.style.color='#777'; back.style.borderColor='#333';
+  back.onclick=closeBattleSubmenu;
+  sub.appendChild(back);
+
+  sub.classList.remove('hidden');
+}
+
+async function bDoArgument(arg){
+  BATTLE.argsUsed++;
+  setBattlePrompt('⏳ Clientul procesează...');
+  const client=BATTLE.client;
+  const result=await callGroq(client, arg.text);
+  // Anger tracking
+  if(result.goodChoice){ BATTLE.clientAnger=Math.max(0,BATTLE.clientAnger-1); }
+  else{ BATTLE.clientAnger++; }
+  if(result.effect==='furios') BATTLE.clientAnger++;
+  updateAngerDisplay();
+  if(BATTLE.clientAnger>=3){
+    clearInterval(BATTLE.battleTimer); BATTLE.battleTimer=null;
+    typeText('bc-dialog-txt','Asta e! Mă duc la alt magazin!',30,()=>battleLose('rage'));
+    return;
+  }
+  const dmg=calcDamage(result, client, arg);
+  applyDamageToClient(dmg, result.replica||'...');
+}
+
+function calcDamage(result, client, arg){
+  let base=8+G.persuasiune*2+rnd(0,8);
+  if(result.goodChoice) base+=10;
+  if(result.effect==='convins') base+=20;
+  if(result.effect==='furios') base=Math.max(2,base-10);
+
+  // Legendary weakness
+  if(client.legendary&&client.slabiciune){
+    const kw=client.slabiciune;
+    const txt=(arg.text+' '+arg.keyword).toLowerCase();
+    if(kw.some(k=>txt.includes(k.toLowerCase()))) base*=3;
+  }
+  return Math.round(base);
+}
+
+// Demonstrează → tap mini-game
+function bDemoGame(){
+  BATTLE.demoSelected=[];
+
+  setBattlePrompt('Tapează cele 3 corecte! (8s)');
+  showBattleActions(false);
+
+  // Use pre-shuffled features from battle start (consistent per battle)
+  const all=BATTLE.demoFeats;
+
+  const dz=$('bt-demo-zone');
+  const df=$('demo-features');
+  df.innerHTML='';
+  $('demo-score').textContent='0/3';
+  $('demo-timer-fill').style.width='100%';
+  dz.classList.remove('hidden');
+
+  all.forEach(f=>{
+    const btn=document.createElement('div');
+    btn.className='demo-feat-btn';
+    btn.textContent=f.t;
+    btn.dataset.ok=f.ok?'1':'0';
+    btn.onclick=()=>{
+      if(btn.classList.contains('tapped')||btn.classList.contains('wrong')) return;
+      if(f.ok){ btn.classList.add('tapped'); BATTLE.demoSelected.push(f.t); }
+      else{ btn.classList.add('wrong'); BATTLE.demoSelected.push(null); }
+      $('demo-score').textContent=BATTLE.demoSelected.filter(x=>x).length+'/3';
+      if(BATTLE.demoSelected.length>=3) finishDemo();
+    };
+    df.appendChild(btn);
+  });
+
+  // 8s timer
+  let timeLeft=8.0;
+  clearInterval(BATTLE.demoTimer);
+  BATTLE.demoTimer=setInterval(()=>{
+    timeLeft-=0.1;
+    $('demo-timer-fill').style.width=Math.max(0,timeLeft/8*100)+'%';
+    if(timeLeft<=0){ clearInterval(BATTLE.demoTimer); finishDemo(true); }
+  },100);
+}
+
+function finishDemo(timedOut){
+  clearInterval(BATTLE.demoTimer);
+  const correct=BATTLE.demoSelected.filter(x=>x).length;
+  // Highlight remaining correct answers when time expires
+  if(timedOut){
+    document.querySelectorAll('.demo-feat-btn').forEach(btn=>{
+      if(!btn.classList.contains('tapped')&&btn.dataset.ok==='1')
+        btn.classList.add('tapped');
+    });
+  }
+  const dmg=correct===3?35:correct===2?18:correct===1?8:5;
+  const replica=correct===3?'Wow, impresionant! Nu știam că...'
+    :correct===2?'Hmm, câteva puncte bune...'
+    :timedOut?'Ai uitat să demonstrezi ceva important!'
+    :'Asta nu e relevant pentru mine.';
+  setTimeout(()=>{
+    $('bt-demo-zone').classList.add('hidden');
+    applyDamageToClient(dmg, replica);
+  }, timedOut?600:0);
+}
+
+// Voucher
+function bVoucherMenu(){
+  BATTLE.elegantSale=false;
+  showBattleActions(false);
+  $('bt-voucher-zone').classList.remove('hidden');
+  setBattlePrompt('Aplică reducere (din comisionul tău):');
+  updateVoucherPreview();
+}
+
+function updateVoucherPreview(){
+  const pct=parseInt($('voucher-slider').value);
+  const client=BATTLE.client;
+  const prodVal=(client.reward?.bani||200)/0.025; // approximate product value
+  const discount=Math.round(prodVal*pct/100);
+  $('voucher-preview').textContent=pct+'% reducere → client economisește ~'+numFmt(discount)+' RON (tu pierzi '+numFmt(Math.round(discount*0.4))+' RON comision)';
+}
+
+function confirmVoucher(){
+  const pct=parseInt($('voucher-slider').value);
+  const dmg=Math.round(pct/20*20+10); // 5%→15, 10%→20, 15%→25, 20%→30
+  const comisionPierdut=Math.round((BATTLE.client.reward?.bani||200)*(pct/100)*0.5);
+  BATTLE.voucherUsed=true;
+  $('battle-voucher-info').textContent='Voucher: '+pct+'% aplicat  |  -'+comisionPierdut+' RON din comision';
+  $('bt-voucher-zone').classList.add('hidden');
+  applyDamageToClient(dmg, 'Oh... cu reducere, poate mă gândesc...');
+  // Deduct later on win — stored as BATTLE.voucherPierdut
+  BATTLE.voucherPierdut=(BATTLE.voucherPierdut||0)+comisionPierdut;
+}
+
+// Sună Șeful
+function bSunaSeful(){
+  if(!G.job){
+    setBattlePrompt('❌ Fără job nu ai un șef!');
+    typeText('bc-dialog-txt','N-auzi că nu ești de la nicio firmă?',30,null);
+    setTimeout(()=>{ showBattleActions(true); setBattlePrompt('Ce faci?'); },1800);
+    return;
+  }
+  if(G.sefCallsToday>=3){
+    setBattlePrompt('📞 Șeful e ocupat! (3/3 apeluri)');
+    typeText('bc-dialog-txt','Nu mai stau să aștept...',30,null);
+    setTimeout(()=>{ showBattleActions(true); setBattlePrompt('Ce faci?'); },1800);
+    return;
+  }
+  BATTLE.elegantSale=false; BATTLE.sefCallsInBattle++;
+  G.sefCallsToday++;
+  setBattlePrompt('📞 Suni la șef... (-'+( BATTLE.sefCallsInBattle>1?20:10)+' Moral)');
+  const moralCost=BATTLE.sefCallsInBattle>1?20:10;
+  BATTLE.playerMoral=Math.max(0,BATTLE.playerMoral-moralCost);
+  G.moral=BATTLE.playerMoral; updateBattleMoral(); updateHUD();
+
+  setTimeout(()=>{
+    applyDamageToClient(45, 'Bine... dacă șeful tău zice...');
+    $('battle-voucher-info').textContent='Voucher: '+(BATTLE.voucherUsed?'DA':'NU')+'  |  Sună Șeful: '+(3-G.sefCallsToday)+'/3 rămase';
+  },1200);
+}
+
+// Fugi
+function bFugi(){
+  const success=Math.random()<0.7;
+  if(success){
+    BATTLE.active=false;
+    notify('🏃 Ai fugit! Clientul te-a lăsat.');
+    closeBattleClean();
+  } else {
+    BATTLE.playerMoral=Math.max(0,BATTLE.playerMoral-5);
+    G.moral=BATTLE.playerMoral; updateBattleMoral(); updateHUD();
+    applyDamageToClient(0,'Unde te duci?! Stai!');
+    notify('😬 Clientul te-a prins! -5 Moral.');
+  }
+}
+
+// ─── Apply damage ────────────────────────────────────────────────
+function applyDamageToClient(dmg, reply){
+  BATTLE.clientHP=Math.max(0,BATTLE.clientHP-dmg);
+  updateBattleHP();
+
+  // Shake sprite
+  const spr=$('bc-sprite'); spr.classList.remove('shake');
+  void spr.offsetWidth; spr.classList.add('shake');
+
+  // Show reply
+  typeText('bc-dialog-txt', reply||'...', 30, null);
+  setBattlePrompt(dmg>0?`-${dmg} rezistență!`:'Nicio schimbare.');
+
+  setTimeout(()=>{
+    if(BATTLE.clientHP<=0) battleWin();
+    else if(BATTLE.playerMoral<=0) battleLose('moral');
+    else{ showBattleActions(true); setBattlePrompt('Ce faci?'); }
+  },1400);
+}
+
+// ─── Win / Lose ──────────────────────────────────────────────────
+function battleWin(){
+  BATTLE.active=false;
+  const client=BATTLE.client;
+  const r=client.reward||{bani:100,xp:30};
+  let bani=r.bani;
+  let xp=r.xp;
+
+  // Bonus elegant sale
+  let bonusMsg='';
+  if(BATTLE.elegantSale&&BATTLE.argsUsed<=2&&!BATTLE.voucherUsed){
+    bani=Math.round(bani*1.5); xp=Math.round(xp*1.5);
+    bonusMsg='\n🌟 VÂNZARE ELEGANTĂ! +50% bonus';
+    G.elegantSales=(G.elegantSales||0)+1;
+  }
+
+  // Voucher cost
+  if(BATTLE.voucherPierdut) bani=Math.max(0,bani-BATTLE.voucherPierdut);
+
+  // Reward based on location + job
+  let earnedBani=0;
+  clearInterval(BATTLE.battleTimer); BATTLE.battleTimer=null;
+  if(BATTLE.location==='indoor_own'&&G.job){
+    earnedBani=Math.round(bani*1.5);
+    addBani(earnedBani); addXP(xp); addMoral(+15);
+    bonusMsg+='\n🏪 COMISION INTERIOR +50%!';
+  } else if(BATTLE.location==='indoor_other'){
+    const tip=60+rnd(0,90);
+    earnedBani=tip;
+    addBani(tip); addXP(Math.round(xp*0.7)); addMoral(+8);
+    bonusMsg+='\n🔄 Client convins la competitor: +'+tip+' RON';
+  } else if(G.job){
+    earnedBani=bani;
+    addBani(earnedBani); addXP(xp); addMoral(+10);
+  } else {
+    const tip=5+rnd(0,15);
+    earnedBani=tip;
+    addBani(tip); addXP(Math.round(xp*0.5)); addMoral(+3);
+    bonusMsg+='\n💰 Bacșiș: +'+tip+' RON\n(Angajează-te pentru comision real!)';
+  }
+
+  // Mark NPC
+  const npc=BATTLE.npcRef;
+  G.npcConvinsi[client.id]=true;
+  if(!npc.isLeg){ npc.interacted=true; if(npc.exclaim) npc.exclaim.setVisible(false); if(npc.nameTag) npc.nameTag.setVisible(false); }
+  saveGame(); checkAchievements(); updateLeaderboard();
+
+  // Result screen
+  $('bt-result-icon').textContent=client.legendary?'🏆':'🎉';
+  $('bt-result-title').textContent='CLIENT CONVINS!';
+  $('bt-result-title').style.color='#FFD600';
+  $('bt-result-details').textContent=(earnedBani?'+'+numFmt(earnedBani)+' RON\n':'')+'+'+xp+' XP\n+10 Moral'+bonusMsg+(client.legendary?'\n'+client.reward?.achievement:'');
+  $('bt-result').classList.remove('hidden');
+}
+
+function battleLose(reason){
+  BATTLE.active=false;
+  clearInterval(BATTLE.battleTimer); BATTLE.battleTimer=null;
+  const icons={rage:'😤',timeout:'⏰',moral:'😵'};
+  const titles={rage:'CLIENTUL A PLECAT!',timeout:'TIMP EXPIRAT!',moral:'MORAL ZERO!'};
+  const msgs={
+    rage:'L-ai enervat prea tare.\nFii mai atent la abordare — clientul simte presiunea.',
+    timeout:'Clientul și-a pierdut răbdarea.\nFii mai rapid — cu cât avansezi, ai mai puțin timp!',
+    moral:'Ești prea epuizat să mai negociezi.\nMergi la Cafenea să îți refaci moralul.'
+  };
+  $('bt-result-icon').textContent=icons[reason]||'😵';
+  $('bt-result-title').textContent=titles[reason]||'EȘEC!';
+  $('bt-result-title').style.color='#E30613';
+  $('bt-result-details').textContent=msgs[reason]||'Încearcă din nou.';
+  $('bt-result').classList.remove('hidden');
+  addMoral(-10);
+}
+
+function closeBattle(){
+  closeBattleClean();
+}
+
+function closeBattleClean(){
+  clearInterval(BATTLE.battleTimer); BATTLE.battleTimer=null;
+  BATTLE.active=false;
+  $('battle-screen').classList.add('hidden');
+  if(!(G.scene instanceof ShopInteriorScene)) $('minimap').style.visibility='visible';
+  G.dialogActive=false;
+  BATTLE.voucherPierdut=0;
+  closeBattleSubmenu();
+}
+
+// ─── Hire System ─────────────────────────────────────────────────
+const STORE_HIRE = {
+  flanco:{label:'FLANCO', color:'#E30613', salariu:3000, comision:'2%', icon:'🔴', minNiv:1,
+    desc:'Cel mai mare retailer de electronice din România.\nSalariu 3.000 RON/lună + 2% comision.\nClienți medii. Perfect pentru început.'},
+  atexl:{label:'ATEXL',  color:'#0044cc', salariu:3500, comision:'2.5%', icon:'🔵', minNiv:5,
+    desc:'Jucător major în electronice și electrocasnice.\nSalariu 3.500 RON/lună + 2.5% comision.\nClienți mai dificili. Nivel 5+ recomandat.'},
+  mage:{label:'MagE',   color:'#ff6600', salariu:4500, comision:'3%', icon:'🟠', minNiv:10,
+    desc:'Colosul digital. Totul, de la telefoane la electrocasnice.\nSalariu 4.500 RON/lună + 3% comision.\nClienți imposibili. Nivel 10+ recomandat.'},
+  banca:{label:'BANCĂ',icon:'🏦', special:true,
+    desc:'Depune bani la bancă pentru dobândă 0.5%/lună.\nRetrage oricând. Împrumut până la 5× salariu, rată 10%/săptămână.'},
+  cafenea:{label:'CAFENEA',icon:'☕', special:true,
+    desc:'O cafea = +25 Moral și o pauză meritată.\n☕ Costă 15 RON.'},
+  casa:{label:'ACASĂ',icon:'🏠', special:true,
+    desc:'Casa ta. Odihna completă reface moralul la 100.\nGratuit — mergi acasă oricând ai nevoie.'},
+  agentie:{label:'AGENȚIE',icon:'🏢', special:true,
+    desc:'Investește în afaceri pentru venit pasiv zilnic.\nVenitul se creditează automat la fiecare zi in-game.'},
+};
+
+function openHireScreen(bld){
+  const cfg=STORE_HIRE[bld.id];
+  if(!cfg){ notify('Clădire momentan inaccesibilă.'); return; }
+  G.dialogActive=true;
+
+  $('hire-title').textContent=cfg.icon+' '+cfg.label;
+  $('hire-title').style.color=cfg.color||'#FFD600';
+
+  // Special buildings (cafenea, bancă, casă)
+  if(cfg.special){
+    $('hire-body').innerHTML=cfg.desc.replace(/\n/g,'<br>');
+    const acts=$('hire-actions'); acts.innerHTML='';
+
+    if(bld.id==='cafenea'){
+      acts.innerHTML=`
+        <button class="hire-btn" onclick="doSpecialBuilding('cafenea')">☕ Bea o cafea (-15 RON / +25 Moral)</button>
+        <button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>
+      `;
+    } else if(bld.id==='casa'){
+      acts.innerHTML=`
+        <button class="hire-btn" onclick="doSpecialBuilding('casa')">🛏️ Odihnește-te (Moral → 100)</button>
+        <button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>
+      `;
+    } else if(bld.id==='banca'){
+      $('hire-screen').classList.remove('hidden');
+      openBankUI();
+      return;
+    } else if(bld.id==='agentie'){
+      $('hire-screen').classList.remove('hidden');
+      openAgentieUI();
+      return;
+    } else {
+      acts.innerHTML=`<button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>`;
+    }
+    $('hire-screen').classList.remove('hidden');
+    return;
+  }
+
+  // Store buildings
+  const alreadyHere=G.job===bld.id;
+  const employed=!!G.job;
+  const levelOk=G.nivel>=cfg.minNiv;
+  const acts=$('hire-actions'); acts.innerHTML='';
+
+  let body=cfg.desc.replace(/\n/g,'<br>');
+  if(alreadyHere){
+    body+=`<br><br><span style="color:#FFD600">✅ Ești deja angajat aici!</span>`;
+  } else if(G.job){
+    const curCfg=STORE_HIRE[G.job]||{};
+    body+=`<br><br><span style="color:#ff8888">⚠️ Ești angajat la ${curCfg.label||G.job}.<br>Trebuie să renunți mai întâi.</span>`;
+  } else if(!levelOk){
+    body+=`<br><br><span style="color:#ff8888">⚠️ Nivel ${cfg.minNiv} necesar (ai ${G.nivel}).</span>`;
+  }
+  $('hire-body').innerHTML=body;
+
+  if(alreadyHere){
+    acts.innerHTML=`
+      <button class="hire-btn-quit" onclick="doQuitJob()">🚪 Renunță la job</button>
+      <button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>
+    `;
+  } else if(employed){
+    acts.innerHTML=`
+      <button class="hire-btn" onclick="doSwitchJob('${bld.id}')" ${levelOk?'':'disabled style="opacity:0.4"'}>🔄 Renunță + Angajează-te</button>
+      <button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>
+    `;
+  } else {
+    acts.innerHTML=`
+      <button class="hire-btn" onclick="doHire('${bld.id}')" ${levelOk?'':'disabled style="opacity:0.4"'}>✅ Angajează-mă!</button>
+      <button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>
+    `;
+  }
+  $('hire-screen').classList.remove('hidden');
+}
+
+function doHire(magazin){
+  const cfg=STORE_HIRE[magazin];
+  G.job=magazin; G.jobSince=G.gameDay||1;
+  updateHUD(); saveGame();
+  closeHireScreen();
+  notify('🎉 Felicitări! Angajat la '+cfg.label+'! Salariu: '+numFmt(cfg.salariu)+' RON/lună');
+}
+
+function doQuitJob(){
+  const old=STORE_HIRE[G.job]||{};
+  G.job=null; G.jobSince=0;
+  updateHUD(); saveGame();
+  closeHireScreen();
+  notify('👋 Ai renunțat la job-ul de la '+(old.label||'?')+'. Fii pe fază!');
+}
+
+function doSwitchJob(newMagazin){
+  const old=STORE_HIRE[G.job]||{};
+  doQuitJob();
+  setTimeout(()=>doHire(newMagazin),200);
+}
+
+function doSpecialBuilding(id){
+  if(id==='cafenea'){
+    if(G.bani<15){ notify('❌ Nu ai suficienți bani pentru o cafea! (15 RON)'); return; }
+    G.bani-=15; G.coffees=(G.coffees||0)+1;
+    addMoral(25); updateHUD(); saveGame(); checkAchievements();
+    notify('☕ Cafea băută! -15 RON · +25 Moral');
+    closeHireScreen();
+  } else if(id==='casa'){
+    G.moral=100; updateHUD(); saveGame(); checkAchievements();
+    notify('🏠 Odihnit! Moral refăcut la 100.');
+    closeHireScreen();
+  }
+}
+
+// ─── BUSINESSES (venit pasiv) ─────────────────────────────────
+const BUSINESSES = {
+  cafenea_proprie:{label:'Cafenea proprie',  icon:'☕',cost:8000, income:150,desc:'Venit zilnic 150 RON'},
+  service_gsm:    {label:'Service GSM',      icon:'📱',cost:12000,income:280,desc:'Venit zilnic 280 RON'},
+  magazin_online: {label:'Magazin online',   icon:'💻',cost:25000,income:600,desc:'Venit zilnic 600 RON'},
+  vulcanizare:    {label:'Vulcanizare',       icon:'🚗',cost:18000,income:400,desc:'Venit zilnic 400 RON'},
+};
+
+function openAgentieUI(){
+  $('hire-title').textContent='🏢 AGENȚIE AFACERI';
+  $('hire-title').style.color='#8888ff';
+  const rows=Object.entries(BUSINESSES).map(([id,b])=>{
+    const owned=(G.afaceri||[]).includes(id);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:320px;padding:8px;border:1px solid ${owned?'#224422':'#222'};background:${owned?'#061406':'#0a0a0a'};margin:4px 0;font-family:VT323,monospace;font-size:16px">
+      <span>${b.icon} ${b.label}<br><span style="font-size:13px;color:#888">${b.desc}</span></span>
+      ${owned?'<span style="color:#00cc44;font-size:13px">✅ Deținut</span>':`<button class="hire-btn" style="font-size:5px;padding:7px 10px;flex-shrink:0" onclick="buyBusiness('${id}')">Cumpără<br>${numFmt(b.cost)} RON</button>`}
+    </div>`;
+  }).join('');
+  $('hire-body').innerHTML=`<div style="width:100%;display:flex;flex-direction:column;align-items:center">${rows}</div>`;
+  $('hire-actions').innerHTML=`<button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>`;
+}
+
+function buyBusiness(id){
+  const b=BUSINESSES[id]; if(!b) return;
+  if((G.afaceri||[]).includes(id)){ notify('Deja deținut!'); return; }
+  if(G.bani<b.cost){ notify('❌ Nevoie de '+numFmt(b.cost)+' RON!'); return; }
+  G.bani-=b.cost; G.afaceri.push(id);
+  updateHUD(); saveGame(); checkAchievements();
+  notify('🏪 Ai cumpărat '+b.label+'! Venit: +'+b.income+' RON/zi');
+  openAgentieUI();
+}
+
+// ─── BANK ────────────────────────────────────────────────────
+function openBankUI(){
+  $('hire-title').textContent='🏦 BANCĂ';
+  $('hire-title').style.color='#00cc44';
+  const sal=G.job?(STORE_HIRE[G.job]?.salariu||0):0;
+  const maxLoan=Math.max(5000,sal*5);
+  $('hire-body').innerHTML=`
+    <span style="font-family:VT323,monospace;font-size:18px">
+      💰 Bani la tine: <b style="color:#FFD600">${numFmt(G.bani)} RON</b><br>
+      🏦 Economii: <b style="color:#00cc44">${numFmt(G.savings||0)} RON</b> <span style="font-size:14px">(0.5%/lună dobândă)</span><br>
+      📋 Împrumut activ: <b style="color:${G.loan?'#ff6666':'#555'}">${numFmt(G.loan||0)} RON</b><br><br>
+      <span style="font-size:14px;color:#888">Împrumut disponibil: până la ${numFmt(maxLoan)} RON<br>Rată: 10% din sold/săptămână in-game.</span>
+    </span>`;
+  $('hire-actions').innerHTML=`
+    <input id="bank-amount" type="number" min="1" placeholder="Sumă RON"
+      style="width:130px;padding:9px;background:#111;color:#FFD600;border:2px solid #333;
+             font-family:'Press Start 2P',monospace;font-size:7px;text-align:center">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:6px">
+      <button class="hire-btn" onclick="bankDeposit()">Depune</button>
+      <button class="hire-btn" style="background:#003366;border-color:#0055cc" onclick="bankWithdraw()">Retrage</button>
+      ${!G.loan?`<button class="hire-btn" style="background:#440000;border-color:#880000;color:#ff8888" onclick="bankLoan()">Împrumut</button>`:''}
+    </div>
+    <button class="hire-btn-cancel" onclick="closeHireScreen()">← Înapoi</button>`;
+}
+
+function bankDeposit(){
+  const amt=parseInt($('bank-amount')?.value)||0;
+  if(amt<=0||amt>G.bani){ notify(amt<=0?'Sumă invalidă!':'❌ Nu ai '+numFmt(amt)+' RON!'); return; }
+  G.bani-=amt; G.savings=(G.savings||0)+amt;
+  updateHUD(); saveGame(); checkAchievements();
+  notify('🏦 Depus '+numFmt(amt)+' RON!');
+  openBankUI();
+}
+function bankWithdraw(){
+  const amt=parseInt($('bank-amount')?.value)||0;
+  if(amt<=0||amt>(G.savings||0)){ notify(amt<=0?'Sumă invalidă!':'❌ Economii insuficiente!'); return; }
+  G.savings-=amt; G.bani+=amt;
+  updateHUD(); saveGame();
+  notify('💰 Retras '+numFmt(amt)+' RON din bancă!');
+  openBankUI();
+}
+function bankLoan(){
+  const amt=parseInt($('bank-amount')?.value)||0;
+  const sal=G.job?(STORE_HIRE[G.job]?.salariu||0):0;
+  const maxLoan=Math.max(5000,sal*5);
+  if(amt<=0||amt>maxLoan){ notify('Sumă între 1 și '+numFmt(maxLoan)+' RON!'); return; }
+  if(G.loan){ notify('❌ Ai deja un împrumut activ!'); return; }
+  G.loan=amt; G.loanDay=G.gameDay; G.bani+=amt;
+  updateHUD(); saveGame();
+  notify('🏦 Împrumut: +'+numFmt(amt)+' RON! Rată ~'+numFmt(Math.round(amt*0.1))+' RON/săpt.');
+  openBankUI();
+}
+
+// ─── ACHIEVEMENTS ─────────────────────────────────────────────
+const ACHIEVEMENTS=[
+  {id:'first_sale', icon:'🎯',label:'Primul Client',      desc:'Convinge primul tău client'},
+  {id:'employed',   icon:'💼',label:'Angajat',            desc:'Obține primul job în retail'},
+  {id:'rich',       icon:'💰',label:'Om cu Bani',         desc:'Adună 10.000 RON'},
+  {id:'master',     icon:'🏆',label:'Maestru Vânzări',    desc:'Atinge nivelul 10'},
+  {id:'legendary',  icon:'🌟',label:'L-ai convins pe el!',desc:'Convinge un NPC legendar'},
+  {id:'elegant5',   icon:'✨',label:'Vânzător de Elită',  desc:'5 vânzări elegante (fără voucher, ≤2 arg)'},
+  {id:'banker',     icon:'🏦',label:'Bancher',            desc:'Depune 5.000 RON la bancă'},
+  {id:'business',   icon:'🏪',label:'Antreprenor',        desc:'Cumpără prima ta afacere'},
+  {id:'coffee10',   icon:'☕',label:'Cafeaua de Dimineață',desc:'Bea 10 cafele'},
+  {id:'veteran',    icon:'⭐',label:'Veteran',            desc:'Supraviețuiește 30 de zile in-game'},
+];
+
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(a=>{
+    if(G.achievements.includes(a.id)) return;
+    let ok=false;
+    if(a.id==='first_sale')  ok=Object.keys(G.npcConvinsi).length>=1;
+    if(a.id==='employed')    ok=!!G.job;
+    if(a.id==='rich')        ok=G.bani>=10000;
+    if(a.id==='master')      ok=G.nivel>=10;
+    if(a.id==='legendary')   ok=['vasile','cornelia','gigel','coste','elena'].some(n=>G.npcConvinsi[n]);
+    if(a.id==='elegant5')    ok=(G.elegantSales||0)>=5;
+    if(a.id==='banker')      ok=(G.savings||0)>=5000;
+    if(a.id==='business')    ok=(G.afaceri||[]).length>=1;
+    if(a.id==='coffee10')    ok=(G.coffees||0)>=10;
+    if(a.id==='veteran')     ok=(G.gameDay||1)>=30;
+    if(ok){ G.achievements.push(a.id); notify('🏆 '+a.label+' deblocat!'); }
+  });
+}
+
+function showAchievements(){
+  $('ach-list').innerHTML=ACHIEVEMENTS.map(a=>{
+    const u=G.achievements.includes(a.id);
+    return `<div class="ach-item ${u?'ach-unlocked':'ach-locked'}">
+      <div class="ach-icon">${u?a.icon:'🔒'}</div>
+      <div><div class="ach-name">${u?a.label:'???'}</div><div class="ach-desc">${u?a.desc:'Blocat'}</div></div>
+    </div>`;
+  }).join('');
+  $('achievements-screen').classList.remove('hidden');
+  G.dialogActive=true;
+}
+function closeAchievements(){
+  $('achievements-screen').classList.add('hidden');
+  G.dialogActive=false;
+}
+
+// ─── LEADERBOARD ─────────────────────────────────────────────
+const LB_KEY='rw_lb_v1';
+function updateLeaderboard(){
+  let lb; try{ lb=JSON.parse(localStorage.getItem(LB_KEY))||[]; }catch{ lb=[]; }
+  lb=lb.filter(e=>e.name!==G.name);
+  lb.push({name:G.name,nivel:G.nivel,bani:G.bani,day:G.gameDay||1});
+  lb.sort((a,b)=>b.bani-a.bani);
+  localStorage.setItem(LB_KEY,JSON.stringify(lb.slice(0,5)));
+}
+function showLeaderboard(){
+  let lb; try{ lb=JSON.parse(localStorage.getItem(LB_KEY))||[]; }catch{ lb=[]; }
+  const medals=['🥇','🥈','🥉','4️⃣','5️⃣'];
+  $('lb-list').innerHTML=lb.length?lb.map((e,i)=>`
+    <div class="lb-row">
+      <span>${medals[i]||'·'} ${e.name}</span>
+      <span style="text-align:right">Niv.${e.nivel}<br>${numFmt(e.bani)} RON</span>
+    </div>`).join('')
+    :'<div style="color:#444;font-family:VT323,monospace;font-size:18px;padding:20px">Nicio intrare. Fii primul!</div>';
+  $('leaderboard-screen').classList.remove('hidden');
+  G.dialogActive=true;
+}
+function closeLeaderboard(){
+  $('leaderboard-screen').classList.add('hidden');
+  G.dialogActive=false;
+}
+
+// ─── NEW DAY TICK ─────────────────────────────────────────────
+function newDayTick(){
+  // Auto-salary (zilnic, proporțional: salariu/30)
+  if(G.job && G.lastSalaryDay!==G.gameDay){
+    G.lastSalaryDay=G.gameDay;
+    const cfg=STORE_HIRE[G.job];
+    if(cfg?.salariu){
+      const daily=Math.round(cfg.salariu/30);
+      G.bani+=daily; updateHUD();
+      notify('💼 Salariu zilnic: +'+numFmt(daily)+' RON ('+cfg.label+')');
+    }
+  }
+  // Reset șef calls
+  G.sefCallsToday=0;
+  // Dobândă bancă (lunar = fiecare 30 zile)
+  if((G.savings||0)>0 && G.gameDay%30===0){
+    const interest=Math.round(G.savings*0.005);
+    if(interest>0){ G.savings+=interest; G.bani+=interest; updateHUD(); notify('🏦 Dobândă bancă: +'+numFmt(interest)+' RON!'); }
+  }
+  // Rată împrumut (săptămânal = fiecare 7 zile)
+  if((G.loan||0)>0 && G.gameDay%7===0){
+    const weekly=Math.round(G.loan*0.1);
+    if(G.bani>=weekly){ G.bani-=weekly; G.loan=Math.max(0,G.loan-weekly); updateHUD(); notify('🏦 Rată împrumut: -'+numFmt(weekly)+' RON'); }
+    else { notify('⚠️ Nu ai bani pentru rata împrumutului! Moral -5'); addMoral(-5); }
+    if(G.loan<=0){ G.loan=0; notify('🎉 Împrumut achitat complet!'); }
+  }
+  // Venit pasiv din afaceri
+  if((G.afaceri||[]).length){
+    const income=(G.afaceri||[]).reduce((s,id)=>s+(BUSINESSES[id]?.income||0),0);
+    if(income>0){ G.bani+=income; updateHUD(); notify('📈 Venit pasiv: +'+numFmt(income)+' RON'); }
+  }
+  checkAchievements();
+  saveGame();
+  updateLeaderboard();
+}
+
+function closeHireScreen(){
+  $('hire-screen').classList.add('hidden');
+  G.dialogActive=false;
+}
+
+// ─── Dialog UI ───────────────────────────────────────────────────
+function openDialog(speaker, text){
+  $('dlg-speaker').textContent=(speaker||'NPC')+':';
+  $('dlg-choices').innerHTML='';
+  $('dlg-continue').classList.add('hidden');
+  $('dialog-box').classList.remove('hidden');
+  typeText('dlg-text',text,38,()=>{ if(!$('dlg-choices').children.length) showContinue(true); });
+}
+function setDialogText(text){ $('dlg-text').textContent=text; }
+function showContinue(on){ $('dlg-continue').classList.toggle('hidden',!on); }
+function showChoicesUI(choices,cb){
+  const cont=$('dlg-choices');
+  cont.innerHTML='';
+  showContinue(false);
+  choices.forEach((c,i)=>{
+    const btn=document.createElement('div');
+    btn.className='dchoice';
+    btn.textContent=['A','B','C'][i]+'. '+c.text;
+    btn.onclick=()=>{ if(!G.dialogActive) return; cb(c); };
+    cont.appendChild(btn);
+  });
+}
+function closeChoicesUI(){ $('dlg-choices').innerHTML=''; }
+function closeDialog(){ $('dialog-box').classList.add('hidden'); G.dialogActive=false; }
+
+let _tt;
+function typeText(elId,text,ms,done){
+  const el=$(elId); el.textContent=''; let i=0;
+  clearInterval(_tt);
+  _tt=setInterval(()=>{
+    el.textContent+=text[i]||''; i++;
+    if(i>text.length){ clearInterval(_tt); if(done) done(); }
+  },ms);
+}
+
+// ─── Loading helper ───────────────────────────────────────────────
+function setLoad(msg,pct){
+  const b=$('load-bar'); if(b) b.style.width=pct+'%';
+  const l=$('load-label'); if(l) l.textContent=msg;
+}
+
+// ─── Init ─────────────────────────────────────────────────────────
+window.addEventListener('load',initMenu);
+</script>
+</body>
+</html>
